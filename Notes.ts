@@ -1438,5 +1438,31 @@
 
 // * Guards
 /*
-    
+    Guards are used to control navigation between routes.
+    Types of Guards in Angular:
+        [1] CanActivate
+            Checks if a route can be accessed.
+            Example: Authentication (allow access only if the user is logged in).
+
+        [2] CanActivateChild
+            Checks if child routes of a route can be accessed.
+            Example: Restricting access to child routes based on user roles or permissions.
+
+        [3] CanDeactivate
+            Checks if it's safe to leave the current route.
+            Example: Prevent losing unsaved changes when leaving a form.
+
+        [4] CanMatch
+            Checks if a route should be matched before the router activation.
+            Example: Conditionally matching routes based on user roles or other criteria.
+
+        * What is the difference between CanActivate & CanMAtch ?
+            CanMatch 
+                Evaluated before the router matches the route.
+                If it returns false, the route is skipped during the matching process.
+
+            canActivate
+                Evaluated after the route is matched but before it's activated.
+                If it returns false, the navigation is canceled, but the route was already considered a match.
+
 */
