@@ -24,6 +24,12 @@
 
         ng g d <directive-name>
             Creating new directive
+
+        ng g g <guard-name>
+            Creating new guard
+
+        ng g interceptor <interceptor-name>
+            Creating new interceptor
             
 
     * CMD (for loop)
@@ -562,7 +568,24 @@
         private readonly _activatedRoute = inject(ActivatedRoute);
         id: string | null = null;
         ngOnInit() {
-            this.id = this._route.snapshot.paramMap.get('id'); 
+            this._paramMap.subscribe({
+                next: (params) => this.id = params.get("id") 
+            })
+            OR
+            this.id = this._activatedRoute.snapshot.paramMap.get('id'); 
+
+            What is the difference between the 2 approaches?
+                [1] Using the paramMap Observable
+                    -> Listens for changes in the route parameters and updates the id property whenever the route changes.
+
+                    -> Best for components that stay loaded while route parameters change.
+
+                [2] Using snapshot.paramMap
+                    -> Gets the route parameter only once when the component is initialized.
+
+                    -> If the route parameter changes while the component remains loaded, the value does not update.
+
+                    -> Best for cases where the component is destroyed and recreated for each navigation change.    
         }
  
 
@@ -1432,7 +1455,14 @@
             </form>
             
             * Why we use (ngSubmit) ?
-                [1] To handle the form submission WITHOUT reloading the page.
+                Angular recommendation to handle the form submission WITHOUT reloading the page.
+
+    * What is the difference between touched & dirty?
+        [1] Touched
+            User focused on and then left the field regardless of whether the value was changed or not.
+
+        [2] Dirty
+            User changed the value of the field, regardless of focus.
 
 */
 
@@ -1465,4 +1495,103 @@
                 Evaluated after the route is matched but before it's activated.
                 If it returns false, the navigation is canceled, but the route was already considered a match.
 
+*/
+
+// * Pipes
+/*
+    Pipes are used to transform data in the template.
+    Types of Pipes
+        [1] Built-in Pipes
+            -> uppercase, lowercase, titlecase, date, currency, percent, json, slice, async, decimal.
+
+        [2] Custom Pipes
+            -> Allows you to create your own pipes for custom transformations.
+
+    Usage
+        [1] Built-in Pipes
+            <p>{{ title | slice: 0:5 }}</p>
+                -> slice pipe takes 3 arguments:
+                    1. title
+                    2. start index
+                    3. end index
+                    # The first argument is always the value to be transformed.
+            <p>{{ date | date: 'dd/MM/yyyy' }}</p>
+            <p>{{ amount | currency: 'USD' }}</p>
+            <p>{{ text | uppercase }}</p>
+
+        [2] Custom Pipes
+            @Pipe({
+                name: 'customPipe'
+            })
+            export class CustomPipe implements PipeTransform {
+                transform(value: any, ...args: any[]): any {
+                    return value;
+                }
+            }
+
+            <p>{{ text | customPipe }}</p>
+*/
+
+// * Interceptors
+/*
+    Service to inspect, modify, or handle HTTP requests and responses globally.
+    Middleware between the client and the server.
+    
+    Use Cases:
+        [1] Authentication
+            Attach authorization headers (e.g., JWT tokens) to requests.
+
+        [2] Error Handling
+            Catch and process errors globally.
+
+        [3] Loading
+            Show and hide loaders based on request state.
+
+    * Notes
+        We must provide the application with the interceptor.
+            provideHttpClient(
+                withFetch(),
+                withInterceptors([headersInterceptor, errorsInterceptor]),
+            )
+
+    Example:
+
+        [1] Headers Interceptor
+            export const headersInterceptor: HttpInterceptorFn = (req, next) => {
+                if (localStorage.getItem('userToken')) {
+                    req = req.clone({
+                    setHeaders: {
+                        token: localStorage.getItem('userToken') ?? '',
+                    },
+                    });
+                }
+                return next(req);
+            };
+
+            * Notes
+                -> We can't modify the request directly, we need to clone it first. (Angular's HttpRequests are immutable)
+
+                -> We use req.clone() creates a new request with the same properties as the original request, we can modify the cloned request by passing an object with the properties to change.
+
+                -> next(req) passes the request to the next interceptor in the chain and returns an Observable of the response.
+                
+        [2] Errors Interceptor
+            export const errorsInterceptor: HttpInterceptorFn = (req, next) => {
+                return next(req).pipe(
+                    catchError((err) => {
+                        ! Handle the error
+                        return throwError(() => err);
+                    }),
+                );
+            };
+
+            * Notes
+                pipe()
+                    -> Allows us to chain multiple operators to the observable like catchError, filter, map
+
+                catchError()
+                    -> Catches errors and allows us to handle them.
+
+                throwError()
+                    -> Rethrows the error so the component using the HTTP request can also handle it if needed.
 */
