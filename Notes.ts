@@ -1088,6 +1088,109 @@
     
 */
 
+// * Observables
+/*
+    RXJS Operators
+        Transform, filter, manipulate emitted values of an Observable before they reach the subscriber.
+
+        [1] of()
+            Creates an observable from a sequence of values.
+            It emits the values one by one synchronously, then completes.
+
+            Example:
+                const source$ = of(1, 2, 3);
+
+        [2] from()
+            Creates an observable from an iterable object.
+            It iterates over the iterable and emits each value one by one.
+
+            Example:
+                const source$ = from([1, 2, 3]);
+
+        [3] map()
+            Transforms each emitted value before it reaches the subscriber.
+
+            Example:
+                const source$ = of(1, 2, 3);
+                const mapped$ = source$.pipe(map(value => value * 2));
+
+        [4] filter()
+            Transforms each emitted value based on a condition before it reaches the subscriber.
+
+            Example:
+                const source$ = of(1, 2, 3);
+                const filtered$ = source$.pipe(filter(value => value % 2 === 0));
+
+        [5] tap()
+            Executes a side effect (like logging) for each emitted value without modifying it.
+            It has its own obj
+            {
+                next: (value) => {
+                    Executes when the Observable emits a value.
+                },
+                error: (error) => {
+                    Executes when an error occurs.
+                },
+                complete: () => {
+                    Executes ONLY when an Observable has finished emitting ALL its values.
+                    Won't execute if an error occurs.
+                }
+            }
+                
+
+        [6] switchMap()
+            Switches from outer stream to inner stream whenever the outer stream emits a value.
+            The emitted value from the outer stream is passed to the inner stream.
+            Automatically unsubscribes from the previous inner stream before subscribing to the new one.
+                If the inner stream takes time (HttpRequest) and the outer stream emits a new value before the inner stream completes,
+                the previous inner stream will be unsubscribed and a new one will be subscribed to.
+
+            Example:
+                this.details$ = router.paramMap.pipe(
+                    switchMap(params => {
+                        return this._detailsService.getData(params.get('id'));
+                    })
+                )    
+
+
+
+
+
+    Behavior Subject
+        Special type of Observable used to manage state and share data across different parts of the application.
+
+        Key Features:
+            [1] Stores the Current Value:
+                It keeps the last emitted value in memory and emits it immediately to any new subscribers.
+            [2] Requires an Initial Value:
+                Needs an initial value upon creation.
+            [3] Multiple Subscribers:
+                Multiple components can subscribe to it and get the latest value.
+            [4] Next Method:
+                You can emit a new value using the .next() method
+
+        Benefits:
+            -> State management in Angular services.
+            -> Sharing data between unrelated components.
+
+
+        Syntax:
+            [1] Creating a behavior subject
+                const behaviorSubject = new BehaviorSubject<T>(initialValue);
+
+            [2] Emitting a new value
+                behaviorSubject.next(newValue);
+
+            [3] Subscribing to the behavior subject
+                const subscriber = behaviorSubject.subscribe((value) => {
+                    Do something with the value
+                })
+                
+        Note:
+            Every time you emit a new value using .next(), it will notify all active subscribers (.subscribe() callbacks will be triggered).
+            
+*/
+
 // * Promise VS Observable
 /*
     Observable
@@ -1319,6 +1422,26 @@
         Not recommended as it can lead to security vulnerabilities (e.g., XSS attacks).
         Tightly coupled with browser APIs, making it non-portable for server-side rendering.
         Should only be used when absolutely necessary.
+
+    ? One Problem with Renderer2
+        Renderer2: can't be directly injected into a service because it depends on the view context of a component or directive.
+
+        ? What if we have to use Renderer2 in a service (Running Renderer2 in the service constructor)?
+            We need to use the RendererFactory2 service to create a Renderer2 instance.
+            RendererFactory2:
+                -> Is independent of any component or view context, making it injectable in a service.
+                -> It provides a method to create a Renderer2 instance: createRenderer
+                -> By passing null as arguments to createRenderer, you create a global Renderer2 instance that is not tied to any specific component or template.
+                    First null: No specific element is targeted.
+                    Second null: No specific data or style encapsulation is needed.
+
+                Example:
+                    constructor(private rendererFactory: RendererFactory2) {
+                        Create an instance of Renderer2
+                            this.renderer = this.rendererFactory.createRenderer(null, null);
+                    }
+            
+
 */
 
 // * View Encapsulation
@@ -1594,4 +1717,122 @@
 
                 throwError()
                     -> Rethrows the error so the component using the HTTP request can also handle it if needed.
+*/
+
+// * Signals
+/*
+    The Problem That Signals Solve
+        Change Detection Performance
+            Change Detection is the mechanism that keeps the view (template) in sync with the component's data (state). In Angular, change detection is triggered on every asynchronous event, such as:
+                -> Click events
+                -> HTTP requests
+                -> Timers (e.g., setTimeout)
+
+            By default, Angular checks the entire component tree, starting from the root component (AppComponent) and traversing down to all child components, even if only one component's state has changed.
+
+            During this process, Angular performs what's called "dirty checking"
+                -> Angular checks every component in the component tree.
+                -> For each component, it evaluates all bindings in the template, including:
+                    @Input() properties
+                    Property bindings like {{ propertyName }}
+                    Event bindings such as (click)="method()"
+                    Directive bindings like [ngClass], [style], etc.
+                -> This involves comparing the current value of each property with its previous value. If a difference is found, Angular updates the view accordingly.
+
+
+            
+    How Signals Solve This Problem
+        Instead of checking the component tree, they create a direct relationship between your state and the parts of the UI that depend on that state.
+        By using signals, Angular knows exactly which parts of the template depend on a given state and updates only those parts, avoiding unnecessary checks.
+
+    Types of Signals
+        [1] Writable Signal
+            A wrapper around a value that notifies consumers when that value changes.
+
+            ## Creating a writable signal
+                const count: WritableSignal<number> = signal(0);
+
+            ## Updating its value
+                count.set(5);
+
+            ## Updating based on previous value
+                count.update(value => value + 1);
+
+            ## Accessing its value
+                count()
+
+        [2] Computed Signal
+            A signal derived from other signals, automatically updating when dependencies change
+
+            ## Creating a computed signal
+                const count: WritableSignal<number> = signal(1);
+                const doubleCount: Signal<number> = computed(() => count() * 2);
+
+            Whenever count changes, doubleCount will update automatically
+                onClick(): void {
+                    count.set(10);
+                }
+                This results in doubleCount updating to 20
+
+
+        [3] Readonly Signal
+            Is used to create an immutable version of a signal.
+
+            ## Creating a readonly signal
+                test: Signal<number> = signal(10).asReadonly();
+
+        [4] Input Signal
+            Replaces the @Input() decorator.
+
+            ## Creating an input signal
+                userName: InputSignal<string> = input('');
+
+            ## Creating a required input signal
+                email: InputSignal<string> = input.required();
+
+
+
+
+    ## Side Effects (effect() function)
+        -> Is used to perform side effects that depend on signal state like:
+            1. Making HTTP requests
+            2. Updating local storage
+            3. Logging
+         
+        When Does effect() Run?
+            Initially: It runs once immediately after it's created, establishing its dependencies.
+            On Dependency Changes: It re-runs automatically whenever any of the signals (read inside its body) change.
+
+        Example
+            count : WritableSignal<number> = signal(1);
+            constructor() {
+                effect(() => {
+                    localStorage.setItem('count', count());
+                });
+            }
+            Notes:
+                The effect() function will initially be called once to establish its dependencies.
+                When the count signal changes, the effect() function will automatically re-run.
+
+
+    ## Misunderstanding
+        price: number = 10; 
+        quantity: number = 1; 
+        totalPrice: number = this.price * this.quantity;
+
+        changeQuantity(): void { 
+            this.price = this.price + 10; 
+        }
+
+        Why when invoking changeQuantity() by async event like click the total price doesn't change?
+            -> Async events (like button clicks) trigger change detection
+            -> Angular checks component properties for changes
+            -> If changes are found, Angular updates the DOM
+            However, change detection doesn't automatically understand relationships between properties. It only compares current values with previous values for each property individually.
+                Sees that price changed from 10 to 20 → updates the DOM
+                Sees that quantity is still 1 → no update needed
+                Sees that totalPrice is still 10 → no update needed
+
+
+
 */
