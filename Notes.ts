@@ -268,57 +268,83 @@
                     The fully-rendered HTML is sent to the client.
                     The browser displays the fully-rendered HTML.
 
-
-    Component
-        A building block of an Angular application, contains the logic and view of a part of the application.
-        A TS class decorated with @Component decorator.
-        @Component: decorator marks the TS class as an Angular component and provides metadata about the component (selector, templateUrl, styleUrls)
-
     Module
         Container for components, directives, pipes, and services.
 
 */
 
-// * Binding
-/*
-    Syncing the data between the component (TS Logic) and the view (HTML template).
+// * Angular Essentials
 
-        ? One-way Binding
+// * [1] Component
+/*
+    The most basic UI building block of an Angular app, contains
+        1. The logic (via typescript class decorated with @Component decorator.)
+        2. The view (via angular template)
+    of a part of the application.
+    An Angular app contains a tree of Angular components.
+    
+    @Component: decorator marks the TS class as an Angular component and provides metadata about the component (selector, templateUrl, styleUrls, standalone) that determines how the component should be processed, instantiated, and used at runtime.
+
+    Angular components are a subset of directives, always associated with a template. Unlike other directives, only one component can be instantiated for a given element in a template.
+
+    Standalone components can be directly imported in any other standalone component or NgModule.
+
+    NgModule based apps on the other hand require components to belong to an NgModule in order for them to be available to another component.
+
+    To make a component a member of an NgModule, list it in the declarations field of the NgModule metadata.
+
+*/
+
+// * [2] Binding
+/*
+    Syncing the data between the component (TS Logic) and the view (Angular template).
+
+        🗒️ One-Way Data Binding
             [1] Data Interpolation
-                Used to bind TEXT CONTENT of an HTML element to component's property or method
-                Is limited to text-binding (Converts any data type to string)
+                Used to bind TEXT CONTENT of an HTML element to component's property or method.
+                Is limited to text-binding (Converts any data type to string).
                 Syntax: {{ data }}
                 Example: <p>{{ message }}</p>
 
             [2] Property Binding
-                Used to bind a component's property or method to a BUILT-IN property of an HTML element
+                Used to bind a component's property or method to a DOM property (Targets DOM properties, not HTML attributes.)
                 Preserve original data type
                 Syntax: [property]="data"
                 Example: <img [src]="imageUrl" />
 
-            * Example (Difference between Data Interpolation & Property Binding)
-                    The behavior of disabled attribute
-                        disabled => Evaluates to disabled
-                        disabled="" => Evaluates to disabled
-                        disabled="Any string" => Evaluates to disabled
+            🗒️ Difference between Data Interpolation & Property Binding
+                ❕The behavior of disabled attribute
+                    disabled => Evaluates to disabled
+                    disabled="" => Evaluates to disabled
+                    disabled="Any string" => Evaluates to disabled
 
-                    <button disabled=" {{isAdmin}} ">
-                        Save
-                    </button>
-                        ? {{isAdmin}} -> will be converted to string, which results into this button will always be disabled no matter what.
+                <button disabled=" {{isAdmin}} "> Save </button>
+                    {{isAdmin}} -> will be converted to string, which results into this button will always be disabled no matter what.
 
-                    <button [disabled]="isAdmin">
-                        Save
-                    </button>
-                        ? [disabled]="isAdmin" -> ONLY if isAdmin evaluates to true, disabled attribute will be added to the button.
+                <button [disabled]="isAdmin"> Save </button>
+                    [disabled]="isAdmin" -> ONLY if isAdmin evaluates to true, disabled attribute will be added to the button.
+
+            🗒️ Difference between DOM Property & HTML attribute
+                ❕HTML Attributes:
+                    1. Define the initial state of HTML elements in the markup
+                    2. Are specified in HTML code (e.g., <input type="text" value="initial">)
+                    3. Always represented as strings
+                    4. Don't change when a user interacts with the element
+
+                ❕DOM Properties:
+                    1. Are properties of DOM objects (JavaScript objects that represent HTML elements in the browser's memory after an HTML document has been parsed.)
+                    2. Represent the current state of the element
+                    3. Can be of any JavaScript type (string, boolean, object, etc.)
+                    4. Reflect the current state and can change during user interaction
 
             [3] Event Binding
                 Used to handle the DOM events.
                 Syntax: (event)="handler()"
                 Example: <button (click)="handler($event)" />
 
+
             [4] Attribute Binding
-                Used to bind the component's property or method to CUSTOM HTML attribute
+                Used to bind the component's property or method to HTML attribute (custom/built-in).
                 Syntax: [attr.attributeName]="data"
                 Example: <div [attr.data-id]="id" />
 
@@ -360,19 +386,17 @@
                         }">
 
 
-        ? Two-way Binding [()]
+        🗒️ Two-way Binding [()]
             Works with Form Inputs, combines Property Binding and Event Binding.
             Syntax: [(ngModel)]="data"
 
-            * How to use Two-way Binding?
-                Import the FormsModule from @angular/forms
-                Use the ngModel directive [(ngModel)]
-                Assign it the state that you want it to update.
+            ❕How to use Two-way Binding?
+                1. Import the FormsModule from @angular/forms
+                2. Use the ngModel directive [(ngModel)]
+                3. Assign it the state that you want it to update.
 
             Example:
                 <input [(ngModel)]="stateProperty" />
-                <p>{{ stateProperty }}</p>
-
 
 */
 
