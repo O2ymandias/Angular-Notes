@@ -105,13 +105,33 @@
             let id: Id = 1;
             id = "1";
 
+            ///////////////////////////
+
             type Product = [string, number];
             let product: Product = ["Samsung S24", 1000];
+
+            ///////////////////////////
 
             type Role = "admin" | "user";
             let role: Role = "admin";
             role = "user";
             role = "super admin"; XXXXXXXXX
+
+            ///////////////////////////
+
+            type User = { id: string; name: string; avatar: string }
+            let user: User = {
+                id: "XXX",
+                name: "XXX",
+                avatar: "XXX"
+            }
+            OR
+            let user: { id: string; name: string; avatar: string } = {
+                id: "XXX",
+                name: "XXX",
+                avatar: "XXX"
+            }
+
 
         [6] void
             Function that does not return a value.
@@ -136,7 +156,7 @@
             Only contains signature for properties or methods (Doesn't have any implementation or logic)
 
 
-            ? The Problem was:
+            ❕The Problem was:
                 let user: object = {
                     name: "Nael",
                     age: 27,
@@ -148,7 +168,7 @@
                     The object type only ensures that a value is non-primitive but it doesn't describe the specific properties an object has.
                     This is why TypeScript raises an error when you try to access user.name, it doesn't know that name exists on the user object
 
-            ? Example:
+            ❕Example:
                 interface User {
                     readonly fullName: string; (Readonly property "Can't be changed after initialization")
 
@@ -172,8 +192,6 @@
 
                 user.fullName = "Max Dmyan"; XXXXXXXXX
                 user.sayHello();
-
-            
 
         
         ? What is the difference between (type assign & type inference)?
@@ -273,9 +291,7 @@
 
 */
 
-// * Angular Essentials
-
-// * [1] Component
+// * Component
 /*
     The most basic UI building block of an Angular app, contains
         1. The logic (via typescript class decorated with @Component decorator.)
@@ -295,7 +311,7 @@
 
 */
 
-// * [2] Binding
+// * Binding
 /*
     Syncing the data between the component (TS Logic) and the view (Angular template).
 
@@ -351,11 +367,11 @@
             [5] Class Binding
                 Used to set the class/classes of an HTML element based on condition.
                 Syntax:
-                    Single Class Binding
+                    ❕Single Class Binding
                         [class.className]="condition"
                         <div class="alert" [class.alert-success]="isActive">
 
-                    Multiple Class Binding
+                    ❕Multiple Class Binding
                         [class]="{
                             'classNameX': conditionA,
                             'classNameY': conditionB,
@@ -387,7 +403,7 @@
 
 
         🗒️ Two-way Binding [()]
-            Works with Form Inputs, combines Property Binding and Event Binding.
+            Works with Form Inputs, combines Property Binding"[value]" and Event Binding "(input)".
             Syntax: [(ngModel)]="data"
 
             ❕How to use Two-way Binding?
@@ -398,32 +414,46 @@
             Example:
                 <input [(ngModel)]="stateProperty" />
 
+
+            🗒️FormsModule
+                Module that provides directives for creating and handling forms.
+                ❕Key Features of FormsModule:
+                    [1] Two-Way Data Binding
+                        Uses [(ngModel)] directive to create two-way data binding between form controls and component properties
+                        Automatically updates the model when the form control value changes and vice versa
+
+                    [2] Handling Submission
+                        Uses (ngSubmit) to handle form submission efficiently.
+                        Prevents default browser submission behavior automatically.
+
 */
 
 // * Control Flow
 /*
     [1] @for
         @for (item of iterable; track $index){
-            * Track Expression:
-                REQUIRED within the @for block.
-                Plays a crucial role in rendering performance:
-                    Used to uniquely identify items for Angular to track changes.
+            🗒️Track Expression:
+                ❕REQUIRED within the @for block.
+                ❕Plays a crucial role in rendering performance:
+                    - Used to uniquely identify items for Angular to track changes.
                     Allows for minimal DOM operations when changes happen within the collection.
 
-                    Without it, DOM updates would be slower since Angular would have to re-render elements from scratch.
+                    - Without it, DOM updates would be slower since Angular would have to re-render elements from scratch.
 
-                ? How to select a good tracking key:
-                    Static collections: track $index can be sufficient for collections that will not change.
+                🗒️How to select a good tracking key:
+                    ❕Static collections:
+                        (track $index) can be sufficient for collections that will not change.
 
-                    Dynamic collections: Use a unique item property that does not change. For example: track item.id
+                    ❕Dynamic collections:
+                        Use a unique item property that does not change (track item.id)
 
-            * @for Variables:
-                $index => Index of the current item in the iterable
-                $count => Total number of items in the iterable
-                $first => True if the current item is the first item in the iterable
-                $last => True if the current item is the last item in the iterable
-                $even => True if the current item has an even index
-                $odd => True if the current item has an odd index
+            🗒️@for Variables:
+                $index -> Index of the current item in the iterable
+                $count -> Total number of items in the iterable
+                $first -> True if the current item is the first item in the iterable
+                $last -> True if the current item is the last item in the iterable
+                $even -> True if the current item has an even index
+                $odd -> True if the current item has an odd index
         }
 
         @empty{
@@ -460,28 +490,44 @@
         @switch does not have fallthrough, so you do not need to (break or return) statement.
 
 
-    Before Angular 19, Directives were used to handle control flow.
-        [1] *ngFor
-            <ng-container *ngFor=" let item of iterable; let i = index;">
-                <ng-container> is a grouping element won't be rendered in the DOM.
-                It's a good practice to use it with *ngFor to avoid adding extra elements to the DOM.
-            </ng-container>
+    Before (@for, @if, @switch) Directives were used to handle control flow.
+        🗒️Grouping Elements
+            ❕<ng-container>
+                Is a logical grouping element that does not get rendered in the DOM. It is useful when you need to apply structural directives (*ngIf, *ngFor, etc.) without adding unnecessary extra elements.
 
-            To access any contextual variable (index, odd, even, count, first, last), you need store it in a variable.
+                ✅ Use Cases
+                    1. Grouping elements without adding extra HTML
+                    2. Applying structural directives (*ngIf, *ngFor) without wrapping elements
+                    3. Improving performance by avoiding extra divs/spans
 
-            
-        [2] *ngIf
-            <div *ngIf="condition; else elseBlock">
-                Content to render when the condition is true
-            </div>
-            <ng-template #elseBlock>
-                Content to render when the condition is false
-                <ng-template> is a grouping element won't be rendered in the DOM unless its called by directive.
-                #elseBlock is a template reference variable.
-            </ng-template>
+            ❕<ng-template>
+                Is used to define template blocks that are not rendered immediately. These templates can be reused and displayed dynamically using *ngIf.
+
+                ✅ Use Cases
+                    1. else block for *ngIf directive
+        🗒️Structural Directives
+            Needs to be imported from @angular/common.
+
+            [1] *ngFor
+                <ng-container *ngFor=" let item of iterable; let i = index">
+                    Repeated Content
+                </ng-container>
+
+                To access any contextual variable (Here without $) (index, odd, even, count, first, last), you need store it in a variable.
+                
+            [2] *ngIf
+                <ng-container *ngIf="condition; else fallback">
+                    Content to render when the condition is true
+                </ng-container>
+
+                <ng-template #fallback>
+                    Content to render when the condition is false
+                </ng-template>
 
 
-        [3] *ngSwitch
+            [3] *ngSwitch
+
+
 
     Advantages of @if, @for, @switch over *ngIf, *ngFor, *ngSwitch:
         [1] Can be used anywhere in the template.
@@ -744,81 +790,59 @@
 
 // * Content Projection
 /*
-    Allows to provide/inject content(HTML design) into child component. (Reusable components)
+    ❕Allows to provide/inject content(HTML design) into child component. (Reusable components)
 
-    At the parent component:
+    ❕At the parent component:
         <app-reusable-component>
             Here where to inject content.
         </app-reusable-component>
 
-    At the reusable component
-        We use <ng-content> to tell Angular where to inject content
+    ❕At the child (reusable) component:
+        We use <ng-content> to tell Angular where to inject content.
         The <ng-content> element is neither a component nor DOM element. Instead, it is a special placeholder that tells Angular where to render content.
 
         <div>
             <h2> Heading </h2>
-            <ng-content></ng-content>
+            <ng-content />
             <p> Paragraph </p>
         </div>
 
-    ! Notes
-        -> You should not conditionally include <ng-content> using control flow directives like @if or @switch.
-            The reason is that Angular always creates and instantiates DOM nodes for projected content inside an <ng-content> element, even if condition is false.
-            This can lead to unnecessary DOM elements being created and possibly affect performance.
-
-        Example
-            XXXX Wrong Approach XXXX
-                @if (showContent) {
-                    <ng-content></ng-content>
-                }
-                Even if showContent is false, Angular still instantiates the projected content. The only effect is hiding it, not preventing its creation.
-
-            Correct Approach
-                Using template fragments.
-
-                <ng-container *ngIf="showContent">
-                    <ng-content></ng-content>
-                </ng-container>
-
-                This is because <ng-container> does not create extra DOM elements.
-
-
-    * Multiple content placeholders
+    🗒️Multiple content placeholders
         You can project multiple different elements into different <ng-content> placeholders using CSS selectors (select="h2").
+
         Example
-            <app-reusable-component>
-                <h2 class="heading"> This is a heading element </h2>
-                <p class="paragraph"> This is a paragraph element </p>
-                <span class="span"> This is a span element </span>
-            </app-reusable-component>
+
+            ❕Parent Component Template
+                <app-reusable-component>
+                    <h2 class="heading"> This is a heading element </h2>
+                    <p class="paragraph"> This is a paragraph element </p>
+                    <span class="span"> This is a span element </span>
+                </app-reusable-component>
+
             
-            
-            <div>
-                <div class="text-center">
-                    <ng-content select=".heading"></ng-content>
+            ❕Child Component Template
+                <div>
+                    <div> <ng-content select=".heading" /> </div>
+
+                    <div> <ng-content select=".paragraph" /> </div>
+
+                    <ng-content />  ‼️This will capture the span
                 </div>
 
-                <div class="text-white">
-                    <ng-content select=".paragraph"></ng-content>
-                </div>
+        🗒️NOTES
+            If you include one or more <ng-content> placeholders with a select attribute and one <ng-content> placeholder without a select attribute, the latter captures all elements that did not match a select attribute, But if the latter not provided, any non-matching elements will be removed from DOM (Angular already created them first at the parent component)
 
-                <ng-content></ng-content>  -> This will capture the span
-            </div>
-
-        ! NOTES
-            -> If you include
-                one or more <ng-content> placeholders with a select attribute &
-                one <ng-content> placeholder without a select attribute, the latter captures all elements that did not match a select attribute, But if the latter not provided, any non-matching elements won't be rendered into the DOM.
-
-    * Fullback content
+    🗒️Fullback content
         Angular can show fallback content inside <ng-content> placeholder if there is no matching projected content.
 
         Example
-            <app-reusable-component /> (No projected content is provided)
+            ❕Parent Component Template
+                <app-reusable-component /> (No projected content is provided)
 
-            <ng-content>
-                <p> Fallback content </p>
-            </ng-content>
+            ❕Child Component Template
+                <ng-content>
+                    <p> Fallback content </p>
+                </ng-content>
 
             -> If no content is passed to <app-reusable-component />, the default fallback content (<p>This is fallback content.</p>) will be displayed.
 
@@ -898,91 +922,75 @@
 
 // * Transfer data from the parent to the child component (@Input()).
 /*
-    @Input() Decorator
-        -> Marks a class field as an input property
-        -> The input property is bound to a DOM property.
-        -> During change detection, Angular automatically updates the data property with the DOM property's value.
+    🗒️ @Input() Decorator
+        1. Marks a class property as an input property
+        2. The input property is bound to a DOM property.
+        3. During change detection, Angular automatically updates the class property with the DOM property's value.
 
-    Example
-        ChildComponent
+    🗒️ Example
+        ❕ChildComponent
             export class ChildComponent {
-                @Input()
-                userName: string = '';
+                @Input() userName = '';
 
-                @Input({
-                    required: true, // To make the property required
-                    alias: emailAddress // To provide an alias for the property
-                })
-                email: string = '';
+                ❕You can pass an options to @Input({})
+                    @Input({
+                        required: true, ❗To make the property required.
+                        alias: emailAddress ❗ To provide an alias for the property.
+                    })
+                    email: string = '';
 
-
-                ! NOTE
-                    In Angular 17+ version, you Should use SIGNAL [input<T>()] instead of @Input().
-                    userName: string = input<string>();
-                    email: string = input.required<string>();
-
-
+                ❕In Angular 17+ version, you Should use SIGNAL [input<T>()] instead of @Input().
+                    userName: string = input("");
             }
 
-        ParentComponent
+        ////////////////////////
+
+        ❕ ParentComponent
             export class ParentComponent {
-                parentUserName:string = 'Nael Muhamed';
-                parentEmail:string = 'nael.muhamed@pm.me';
+                UserNameToBeSent = 'Nael Muhamed';
+                EmailToBeSent = 'nael.muhamed@pm.me';
             }
 
-        Parent Component Template
+        ❕Parent Component Template
             <app-child
-                [userName]="parentUserName"
-                [email]="parentEmail" // Must be provided
-            >
-            </app-child>
+                [userName]="UserNameToBeSent"
+                [email]="EmailToBeSent" ❗ Must be provided
+            />
 */
 
 // * Transfer data from the child to the parent component (@Output()).
 /*
-
-    @Output() Decorator
-        -> Marks a class field as an output property which is typically an instance of EventEmitter<T>.
-        -> So parent component can listen to this event using event binding syntax.
+    🗒️ @Output() Decorator
+        ❕ Marks a class property as an output property which is typically an instance of EventEmitter<T>.
+        So parent component can listen to this event using event binding syntax.
 
         
-    Steps
+    🗒️ Steps
         [1] Define an EventEmitter in the child component and marks it as an output property using @Output() decorator.
 
             export class ChildComponent {
-                userName: string = 'John Doe';  // Data to be sent to the parent component
+                userName: string = 'John Doe';❗Data to be sent to the parent component
 
-                @Output("aliasName"?)
-                dataEvent: EventEmitter<string> = new EventEmitter<string>();
+                @Output() dataEvent = new EventEmitter<string>();
 
-                ! NOTE
-                    In Angular 17+ version, you Should use SIGNAL [output<T>()] instead of @Output().
-                    dataEvent: OutputEmitterRef<string> = output<string>();
-
-
+                ❕In Angular 17+ version, you should use output<T>() (It is not a signal, But its the modern way to create an event emitter WITHOUT manually creating an instance of EventEmitter)
+                    dataEvent = output<string>();
             }
 
         [2] Emit the event with data when ACTION is triggered.
 
             export class ChildComponent {
-                userName: string = 'John Doe';
-                dataEvent: EventEmitter<string> = new EventEmitter<string>();
-
                 sendDataToParent(): void {
-                    this.dataEvent.emit(this.userName); // Fire the event with the data
+                    this.dataEvent.emit(this.userName);❗Fire the event with the data
                 }
             }
 
-            <button (click)="sendDataToParent()">
-                FireEvent
-            </button>
+            <button (click)="sendDataToParent()"> FireEvent </button>
 
         [3] Capture the event in the parent component using the event binding syntax.
 
             <app-child (dataEvent)="receivedUserName = $event" />
-
             OR
-
             <app-child (dataEvent)="onReceivingData($event)" />
 
             export class AboutComponent {
@@ -1745,54 +1753,57 @@
 
 // * Signals
 /*
-    The Problem That Signals Solve
+    Signal are trackable data container (object that can store any type of value).
+    🗒️ The Problem That Signals Solve
         Change Detection Performance
-            Change Detection is the mechanism that keeps the view (template) in sync with the component's data (state). In Angular, change detection is triggered on every asynchronous event, such as:
-                -> Click events
-                -> HTTP requests
-                -> Timers (e.g., setTimeout)
+            ❕ Change Detection is the mechanism that keeps the view (template) in sync with the component's data (state). In Angular, change detection is triggered on every asynchronous event, such as:
+                1. Click events
+                2. HTTP requests
+                3. Timers (e.g., setTimeout)
 
-            By default, Angular checks the entire component tree, starting from the root component (AppComponent) and traversing down to all child components, even if only one component's state has changed.
+            ❕ By default, Angular checks the entire component tree, starting from the root component (AppComponent) and traversing down to all child components, even if only one component's state has changed.
 
-            During this process, Angular performs what's called "dirty checking"
-                -> Angular checks every component in the component tree.
-                -> For each component, it evaluates all bindings in the template, including:
-                    @Input() properties
-                    Property bindings like {{ propertyName }}
-                    Event bindings such as (click)="method()"
-                    Directive bindings like [ngClass], [style], etc.
-                -> This involves comparing the current value of each property with its previous value. If a difference is found, Angular updates the view accordingly.
-
+            ❕ During this process, Angular performs what's called "dirty checking"
+                1. Angular checks every component in the component tree.
+                2. For each component, it evaluates all bindings in the template, including:
+                    - @Input() properties
+                    - Property bindings like {{ propertyName }}
+                    - Event bindings such as (click)="method()"
+                    - Directive bindings like [ngClass], [style], etc.
+                3. This involves comparing the current value of each property with its previous value. If a difference is found, Angular updates the view accordingly.
 
             
-    How Signals Solve This Problem
-        Instead of checking the component tree, they create a direct relationship between your state and the parts of the UI that depend on that state.
-        By using signals, Angular knows exactly which parts of the template depend on a given state and updates only those parts, avoiding unnecessary checks.
+    🗒️ How Signals Solve This Problem
+        ❕ Instead of checking the component tree, they create a direct relationship between your state and the parts of the UI that depend on that state.
 
-    Types of Signals
+        ❕By using signals, Angular knows exactly which parts of the template depend on a given state and updates only those parts, avoiding unnecessary checks.
+
+    🗒️ Types of Signals
+
         [1] Writable Signal
             A wrapper around a value that notifies consumers when that value changes.
 
-            ## Creating a writable signal
-                const count: WritableSignal<number> = signal(0);
+            Creating a writable signal
+                const count: WritableSignal<number> = signal(0); ❗MUST be given an initial value.
 
-            ## Updating its value
+            Updating its value
                 count.set(5);
 
-            ## Updating based on previous value
+            Updating based on previous value
                 count.update(value => value + 1);
 
-            ## Accessing its value
-                count()
+            Accessing its value
+                count();
 
         [2] Computed Signal
-            A signal derived from other signals, automatically updating when dependencies change
+            Tracks all signals that are accessed during the execution of its callback function.
+            Whenever the value of any tracked signal changes, the computed signal will automatically re-execute its callback function to calculate its new value.
 
-            ## Creating a computed signal
+            ❕Creating a computed signal
                 const count: WritableSignal<number> = signal(1);
                 const doubleCount: Signal<number> = computed(() => count() * 2);
 
-            Whenever count changes, doubleCount will update automatically
+            ❕Whenever count changes, doubleCount will update automatically
                 onClick(): void {
                     count.set(10);
                 }
@@ -1807,15 +1818,13 @@
 
         [4] Input Signal
             Replaces the @Input() decorator.
+            Input Signals are readonly.
 
-            ## Creating an input signal
-                userName: InputSignal<string> = input('');
+            Creating an input signal
+                userName: InputSignal<string> = input<string>(''); ❗Optional, to give it an initial value, if not (userName -> InputSignal<string | undefined>)
 
-            ## Creating a required input signal
-                email: InputSignal<string> = input.required();
-
-
-
+            Creating a required input signal
+                email: InputSignal<string> = input.required<string>(); 
 
     ## Side Effects (effect() function)
         -> Is used to perform side effects that depend on signal state like:
