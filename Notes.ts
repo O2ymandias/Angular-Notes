@@ -426,6 +426,20 @@
                         Uses (ngSubmit) to handle form submission efficiently.
                         Prevents default browser submission behavior automatically.
 
+                        🗒️Default Behavior of <form>:
+                            [1] If the <form> tag does not have an action attribute, it submits the form data to the current page's URL using the method specified (GET or POST, default is GET). (Sending a request to the server that is serving the app)
+
+                            [2] If an action attribute is provided, the request is sent to the specified URL.
+
+                        🗒️Why Does the Page Reload?
+                            When the submit button is clicked, the browser:
+                                1. Gathers form data.
+                                2. Sends a request (GET/POST) to the server.
+                                3. Waits for the server's response.
+                                4. If the server responds with a new HTML page, the browser loads that page (causing a reload).
+                                5. If the server responds with a redirect, the browser navigates to the new URL.
+
+
 */
 
 // * Control Flow
@@ -539,6 +553,98 @@
         [3] No need to be imported
             Directives need to be imported from @angular/common module.
         
+*/
+
+// * Modules
+/*
+    A module is a mechanism to group related components, directives, pipes, and services.
+    It helps to organize the application.
+
+    Every Angular application has at least one module, called the root module (AppModule), which bootstraps the application.
+
+    🗒️NgModule Decorator
+        Configures the module with metadata that tells Angular how to compile and run the application.
+        {
+            declarations: components, directives, and pipes that belong to this module,
+            imports: standalone components & the other modules,
+            providers: services that the module contributes to the global collection of services,
+            bootstrap: The root component that Angular creates and inserts into the index.html page,
+            exports: components, directives, and pipes from the current module that will be available to other modules that import this module. It's essentially the public API of the module.
+        } 
+
+    🗒️AppModule
+        import { NgModule } from '@angular/core';
+        import { AppComponent } from './app.component';
+        import { BrowserModule } from '@angular/platform-browser';
+
+        @NgModule({
+        declarations: [AppComponent],
+        bootstrap: [AppComponent],
+        imports: [BrowserModule],
+        })
+        export class AppModule {}
+
+    🗒️Browser Module
+        Foundation module that enables Angular applications to run in web browsers:
+            1. Connects Angular to the browser's DOM
+            2. Provides critical rendering services (Without it nothing will be rendered)
+            3. Includes all common directives (ngIf, ngFor, etc.) and pipes (DatePipe, CurrencyPipe, etc.) as the BrowserModule itself imports CommonModule  
+            4. Manages browser events and DOM manipulation
+            5. Handles security through DOM sanitization
+
+        MUST be imported ONLY ONCE in the entire application
+        MUST be included ONLY in the root AppModule
+        Feature modules should use CommonModule instead
+
+    🗒️ main.ts
+        import { platformBrowserDynamic } from '@angular/platform-browser-dynamic';
+        import { AppModule } from './app/app.module';
+        platformBrowserDynamic().bootstrapModule(AppModule);
+
+
+
+
+*/
+
+// * Extending Built-in Elements
+/*
+    🗒️How Angular Normally Renders Components?
+        When Angular renders a component, it wraps it inside a custom HTML element.
+        For example, a ButtonComponent with selector: 'app-button' would be used as <app-button></app-button>, which creates a wrapper element.
+
+    🗒️Preventing the Wrapper with Attribute Selectors.
+        1. Instead of using a custom element (<app-button>), we can use an attribute selector like button[app-button].
+        2. This tells Angular to apply the component’s logic to an existing button element instead of wrapping it inside another element.
+
+        ❕Button Component
+            @Component({
+                selector: 'button[app-button]',
+                ‼️Angular will scan the template for a button element with the app-button attribute.
+                ‼️If it finds one, it will enhance the button with the component’s template and logic.
+                ‼️Angular preserves native behavior, The <button> retains all default behavior like type, disabled, and click events.
+
+                ...
+            })
+
+        ❕Button Template
+            <span> Click </span>
+            <span class="icon"> ⌲ </span>
+
+
+
+        ❕Parent Component
+            @Component({
+                imports: [ButtonComponent], ‼️Must be imported
+                ...
+            })
+
+            <button app-button></button> ‼️Since app-button is just an attribute, There is no wrapper element.
+
+    🗒️Types Of Selectors
+        [1] Element Selector: Selects an element by its tag name. (app-header)
+        [2] Class Selector: Selects an element by its class name. (.header)
+        [3] Attribute Selector: Selects an element by its attribute. (button[app-button] | button[app-button="submit"]) ) 
+
 */
 
 // * Routing
@@ -808,14 +914,22 @@
         </div>
 
     🗒️Multiple content placeholders
-        You can project multiple different elements into different <ng-content> placeholders using CSS selectors (select="h2").
+        You can project multiple different elements into different <ng-content> placeholders using CSS selectors
+            select="h2"
+                -> Selects the <h2> element
+            select=".paragraph"
+                -> Selects the element with the class paragraph
+            select="input, textarea"
+                -> Selects the <input> and <textarea> elements
+            
 
         Example
-
             ❕Parent Component Template
                 <app-reusable-component>
                     <h2 class="heading"> This is a heading element </h2>
                     <p class="paragraph"> This is a paragraph element </p>
+                    <div ngProjectAs="divElement" > This is a div element </div>
+                        ❕This tells Angular to treat the <div> as if it had a selector divElement.
                     <span class="span"> This is a span element </span>
                 </app-reusable-component>
 
@@ -826,11 +940,31 @@
 
                     <div> <ng-content select=".paragraph" /> </div>
 
-                    <ng-content />  ‼️This will capture the span
+                    <div> <ng-content select="divElement" /> </div>
+
+                    <ng-content /> ‼️This will capture the span
                 </div>
 
         🗒️NOTES
             If you include one or more <ng-content> placeholders with a select attribute and one <ng-content> placeholder without a select attribute, the latter captures all elements that did not match a select attribute, But if the latter not provided, any non-matching elements will be removed from DOM (Angular already created them first at the parent component)
+
+
+    🗒️ ngProjectAs Directive
+        Tells Angular to treat the projected content as if it had a different selector.(The old selector will be ignored)
+
+        ❕Parent Component Template
+            <app-card>
+                <div ngProjectAs="header">This is the header</div>
+                <p>This is the body</p>
+            </app-card>
+
+        ❕Child Component Template
+            <div class="card">
+                <ng-content select="header" />‼️Will project the div with ngProjectAs="header"
+                <ng-content />   ‼️Will capture everything else that is not selected 
+            </div>
+
+
 
     🗒️Fullback content
         Angular can show fallback content inside <ng-content> placeholder if there is no matching projected content.
