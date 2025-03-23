@@ -623,6 +623,10 @@
                 ‼️If it finds one, it will enhance the button with the component’s template and logic.
                 ‼️Angular preserves native behavior, The <button> retains all default behavior like type, disabled, and click events.
 
+                ❕For Multiple Selectors
+                    selector: 'button[app-button], a[app-button], input[app-button]',
+                    ‼️Angular will scan the template for button, a, and input elements with the app-button attribute.
+
                 ...
             })
 
@@ -1468,31 +1472,6 @@
             [4] @Optional
 */
 
-// * @HostListener
-/*
-    Method decorator listens for DOM events on the host element (the element to which the directive is applied).
-    When the event occurs, the decorated method is executed.
-
-    Syntax
-        @HostListener('eventName', ['$event'])
-        handler(event: Event) {
-            event.stopPropagation();
-            event.preventDefault();
-            LOGIC
-        }
-
-    Listening For Global Events related to window OR document like (keyboardEvents, scroll)
-        @HostListener('window:scroll', ['$event'])
-        handler(event: Event) {
-            LOGIC
-        }
-        @HostListener('document:keyup', ['$event'])
-        handler(event: Event) {
-            LOGIC
-        }
-    
-*/
-
 // * Directives
 /*
     Special markers in the DOM that allow you to extend HTML's functionality.
@@ -1615,17 +1594,19 @@
     Every component has a view encapsulation setting that determines how styles are applied and scoped.
     @Component({
         encapsulation:
-            ViewEncapsulation.Emulated 
-            ViewEncapsulation.None // No encapsulation, styles are global
-            ViewEncapsulation.ShadowDom // Uses native Shadow DOM for true isolation
+            ViewEncapsulation.Emulated
+            ViewEncapsulation.None
+            ViewEncapsulation.ShadowDom
+
+        ...
     })
 
-    ViewEncapsulation.Emulated
+    [1] ViewEncapsulation.Emulated
         (Default) Scoped styles using attribute selectors
 
-        How does Angular scope the styles?
-            [1] Generates a unique attribute for the component instance.
-                <app-home _nghost-ng-c2378992897></app-home>
+        ❕How does Angular scope the styles?
+            [1] Generates a unique attribute for each component instance.
+                <app-home _nghost-ng-c2378992897> </app-home>
 
             [2] Adds that attribute to elements inside the component's template.
                 <p _ngcontent-ng-c2378992897> Content </p>
@@ -1635,22 +1616,98 @@
                     color: #09c;
                 }
 
-            ! Effect:
-                The styles are only applied inside the component and don’t leak to other components.
+            🗒️Notes
+                1. The styles are only applied inside the component and don’t leak to other components.
+                2. Global styles may still affect elements inside a component.
 
-            ! NOTES
-                Global styles may still affect elements inside a component
 
-    ViewEncapsulation.None
+    [2] ViewEncapsulation.None
         Styles are applied globally (no isolation, all components can be affected by this component's styles).
             p {
                 color: #09c;
             }
             The style affects all <p> elements across the application.
 
-    ViewEncapsulation.ShadowDom
+    [3] ViewEncapsulation.ShadowDom
         Uses the native Shadow DOM API for real style isolation.
         Styles do not leak in (Global style has no effect) or out of the component.
+
+*/
+
+// * Host Element
+/*
+    ❕Every Angular component has a host element.
+    ❕The elements targeted by the component selector DOESN'T act as a placeholders, they will be rendered into the real DOM.
+        A component with the selector "app-home" targets <app-home /> element an angular template and will be rendered into the real DOM as <app-home> </app-home>
+
+    🗒️How the Host Element Appears in the DOM?
+        Depends on the View Encapsulation mode:
+                1. Incase of ViewEncapsulation.Emulated (Default)
+                    <app-home _nghost-ng-c2378992897> </app-home> ‼️Angular adds a unique _nghost attribute for style scoping
+
+                2. Incase of ViewEncapsulation.None or ViewEncapsulation.ShadowDom
+                    <app-home> </app-home> ‼️ No special attributes are added.
+
+    🗒️Styling the Host Element
+        Can target the host element using :host.
+        :host {
+            CSS styles
+        }
+
+        ✅ This works only with ViewEncapsulation.Emulated.
+        ❌ It won’t work with ViewEncapsulation.None or ViewEncapsulation.ShadowDom.
+            cause the host element won't have this special attribute (_nghost) in the DOM.
+
+
+    🗒️Setting configuration for the host element (Angular Recommendation)
+        @Component({
+            host: {
+                class: 'active',
+                '(click)': 'onClick($event)',
+            }
+            
+            ...
+        })
+
+        (host): Allows you to bind attributes, classes, and styles directly to the host element of a component.
+        This ensures whenever <app-home> is used, it will automatically have the active class.
+
+    🗒️HostBinding Decorator
+        export class HomeComponent {
+            ❕Static Binding
+                @HostBinding('class') className = "active";
+                    ‼️Actually Angular understands that className refers to class, so it will add the class "active" to the element classList, So in this case no need to explicitly pass hostPropertyName to HostBinding decorator.
+
+            ❕Dynamic Binding
+                @HostBinding('class.active') isActive = true;
+                    ‼️This will add the active class to the host element classList if isActive is true.
+
+        }
+
+    🗒️HostListener Decorator
+        Method decorator listens for DOM events on the host element
+        When the event occurs, the decorated method is executed.
+
+        @HostListener('eventName', ['$event'])
+        handler(event: Event) {
+            // LOGIC
+        }
+
+        ❕Listening For Global Events related to window OR document like (keyboardEvents, scroll)
+            @HostListener('window:scroll', ['$event'])
+            handler(event: Event) {
+                // LOGIC
+            }
+            @HostListener('document:keyup', ['$event'])
+            handler(event: Event) {
+                // LOGIC
+            }
+
+    🗒️Accessing The Host Element Programmatically
+        Angular provides ElementRef service to access the host element.
+        hostElement = inject(ElementRef);
+
+        
 */
 
 // * SSR & Global Objects
