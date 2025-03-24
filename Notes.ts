@@ -86,7 +86,7 @@
         [2] type literal
             let role: "admin" | "user" = "admin";
             role = "user";
-            role = "super admin"; XXXXXXXXX
+            role = "super admin"; ❌ Error
 
         [3] tuple
             Array with fixed number of elements with fixed data types.
@@ -884,18 +884,28 @@
 
 // * Variables in templates
 /*
-    [1] Local template variable
+    [1] Local template variable (@let)
     [2] Template reference variable
 
-    * Template reference variable
-        Allows to declare a variable that references a value from an element in your template.
-        A template reference variable can refer to:
-            -> DOM element within a template.
-            -> Angular component or directive
+    🗒️Template reference variable
+        Is used to get a reference to an element or child component inside a template.
+        It allows direct access to DOM elements, Angular components, or directives.
 
         Example
-            <input #fNameInp placeholder="Your first name">
-            #fNameInp : refers to HTMLInputElement
+            <input #nameInput type="text">
+            <button (click)="onSubmit(nameInput.value)">Submit</button>
+
+            #nameInput references the <input> element.
+            It can be used anywhere in the template.
+
+
+    🗒️Accessing Template reference variable in TS
+        @ViewChild('nameInput') nameInput!: ElementRef<HTMLInputElement>;
+        ngAfterViewInit(): void {
+            ‼️Access the input after view initialization
+            const value = nameInput.nativeElement.value
+        }
+
 */
 
 // * Content Projection
@@ -990,32 +1000,32 @@
 
 // * @ViewChild | @ViewChildren | @ContentChild | @ContentChildren Decorators
 /*
-    ? @ViewChild()
-        -> To access DOM (element OR child component) from parent VIEW (Template).
+    🗒️@ViewChild()
+        To access (DOM element OR child component) from parent VIEW (Template).
 
         Parameters:
             selector: ('Template reference variable' -> DOM element) OR (ComponentName -> Child component) 
 
         Returns:
-            ElementRef<> -> DOM element
-                Inside ElementRef, we can access the nativeElement property which provides access to the DOM element.
+            ElementRef<TypeOfDOMElement> -> DOM element
+                ElementRef: A wrapper around a native element inside of a View.
 
             Component -> Child component
 
-        * Example 1
+        ❕Example 1
             export class HomeComponent {
                 @ViewChild('myParagraph')
-                paragraph!: ElementRef<HTMLParagraphElement>;
+                paragraph?: ElementRef<HTMLParagraphElement>;
             }
 
-        * Example 2
+        ❕Example 2
             export class HomeComponent {
                 @ViewChild(ChildComponent)
                 childComponent!: ChildComponent;
             }
 
 
-    ? @ViewChildren()
+    🗒️@ViewChildren()
         -> To access a QueryList of (DOM elements OR child components) of the parent VIEW (Template).
 
         Parameters:
@@ -1023,27 +1033,27 @@
             
 
         Returns:
-            QueryList<ElementRef<>> -> DOM elements
+            QueryList<ElementRef<TypeOfDOMElement>> -> DOM elements
                 Inside QueryList, we can access useful properties like:
-                    first() : provides access to the first DOM element of the QueryList
-                    last() : provides access to the last DOM element of the QueryList
+                    first(): provides access to the first DOM element of the QueryList
+                    last(): provides access to the last DOM element of the QueryList
 
             QueryList<Component> -> Child components
 
-        * Example 1
+        ❕Example 1
             export class HomeComponent {
                 @ViewChildren('listItem')
-                listItems!: QueryList<ElementRef<HTMLElement>>;
+                listItems?: QueryList<ElementRef<HTMLElement>>;
             }
 
-        * Example 2
+        ❕Example 2
             export class HomeComponent {
                 @ViewChildren(ChildComponent)
                 childComponents!: QueryList<ChildComponent>;
             }
 
-    ! NOTES
-        QueryList: An unmodifiable list of items that Angular keeps up to date when the state of the application changes. QueryList itself is an iterable object.
+    ‼️NOTES
+        QueryList: An Immutable list of items that Angular keeps up to date when the state of the application changes. QueryList itself is an iterable object.
         If the view DOM changes, and a new child matches the selector of @ViewChild/@ViewChildren, the property is updated.
 
 
@@ -1142,73 +1152,76 @@
 
 */
 
-// * Component Lifecycle Hooks (8 methods)
+// * Component Lifecycle Hooks.
 /*
-    Constructor
+    ❕Constructor
+    	Standard JS class constructor . Runs when Angular instantiates the component.
         Initializes the class properties and injects dependencies when the class is instantiated.
         Called once.
 
-    ngOnChanges (Multiple times)
+    ❕ngOnChanges (Multiple times)
         Called:
             [1] First Call -> After the constructor.
-            [2] After input properties (@Input) change with NEW value.
+            [2] After input properties change with NEW values.
 
         If the component has no input properties, ngOnChanges won't be called.
 
-    ngOnInit (Once)
-        Called once after the first ngOnChanges call.
+    ❕ngOnInit (Once)
+        Called once after the first ngOnChanges call (after Angular has initialized all the component's inputs).
         Usage:
             Initialization logic, fetching data, and subscribing to observables.
 
-    ngDoCheck (Multiple times)
+    ❕ngDoCheck (Multiple times)
         Called:
             [1] First Call -> After ngOnInit.
             [2] With every change detection cycle.
 
-                * What triggers change detection cycle?
-                    User interaction (click, input, etc.)
-                    HTTP request
-                    Timer (setTimeout, setInterval)
-                    Observables
+                🗒️What triggers change detection cycle?
+                    1. User interaction (click, input, etc.)
+                    2. HTTP request
+                    3. Timer (setTimeout, setInterval)
+                    4. Observables
         Usage:
             Enables custom change detection logic when Angular default change detection is not sufficient.
 
-    ngAfterContentInit (Once)
-        After content projection (<ng-content />) is initialized.
+    ❕ngAfterContentInit (Once)
+        After the projected content (<ng-content />) is initialized.
         Usage:
             With @ContentChild and @ContentChildren.
 
-        ! NOTE
+        ‼️NOTE
             This means we have access on the projected content before the view is initialized.
         
 
-    ngAfterContentChecked (Multiple times)
+    ❕ngAfterContentChecked (Multiple times)
         Called:
             [1] First Call -> After ngAfterContentInit.
-            [2] When the projected content is checked by change detection.
+            [2] When the projected content is checked for changes (With every change detection cycle).
 
-    ngAfterViewInit (Once)
+    ❕ngAfterViewInit (Once)
         After the component's view and child views are initialized.
         Usage:
             Interacting with the DOM using @ViewChild or @ViewChildren.
 
-    ngAfterViewChecked (Multiple times)
+    ❕ngAfterViewChecked (Multiple times)
         Called:
             [1] First Call -> After ngAfterViewInit.
-            [2] When the view and child views are checked by change detection.
+            [2] When the view and child views are checked for changes (With every change detection cycle).
 
-    ngOnDestroy (Once)
-        Before the component is destroyed (Leaving the current route).
-        Usage:
-            Cleanup activities such as unsubscribing from observables and clearing intervals.
 
-    afterNextRender (Once) [NEW]
+    ❕afterNextRender (Once) [NEW]
         Executes Once after Hydration.
         Skipped during SSR
 
-    afterRender (Multiple Times) [NEW]
+    ❕afterRender (Multiple Times) [NEW]
         Runs after every change detection cycle
         Skipped during SSR
+
+
+    ❕ngOnDestroy (Once)
+        Before the component is destroyed (Leaving the current route).
+        Usage:
+            Cleanup activities such as unsubscribing from observables and clearing intervals.
 
 */
 
@@ -2059,4 +2072,30 @@
 
 
 
+*/
+
+// * DestroyRef
+/*
+    DestroyRef is a part of Angular's dependency injection system, allowing you to register cleanup tasks when an instance (such as a component, directive, or service) is destroyed.
+
+    🛠️ Key Features
+        1. Lets you set cleanup callbacks to run upon destruction.
+        2. The scope of destruction depends on where DestroyRef is injected:
+            In a Component or Directive → Cleanup occurs when the component/directive is destroyed.
+            
+            In a Service → Cleanup occurs when the injector that created the service is destroyed.
+                If a service is provided globally (providedIn: 'root'), it gets destroyed when the whole Angular app is terminated (e.g., page reload, tab closed).
+
+                If a service is provided in a component or module, it gets destroyed when that component or module is removed.
+
+    ❕Example
+        private destroyRef = inject(DestroyRef);
+          ngOnInit(): void {
+            const interval = setInterval(() => {
+                // Logic
+            }, 5000);
+
+            this.destroyRef.onDestroy(() => clearInterval(interval));
+                ‼️onDestroy() -> Returns a cleanup function that can be invoked to unregister the callback.
+        }
 */
