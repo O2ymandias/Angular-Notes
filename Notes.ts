@@ -2061,18 +2061,18 @@
                 
         
 
-    ## Side Effects (effect() function)
-        -> Is used to perform side effects that depend on signal state like:
+    🗒️Side Effects (effect() function)
+        Is used to perform side effect that depend on signal state like:
             1. Making HTTP requests
             2. Updating local storage
             3. Logging
          
-        When Does effect() Run?
+        ❕When Does effect() Run?
             Initially: It runs once immediately after it's created, establishing its dependencies.
-            On Dependency Changes: It re-runs automatically whenever any of the signals (read inside its body) change.
+            On Dependency Changes: It re-runs automatically whenever any of the signals (used inside its callback) change.
 
-        Example
-            count : WritableSignal<number> = signal(1);
+        ❕Example
+            count = signal(1);
             constructor() {
                 effect(() => {
                     localStorage.setItem('count', count());
@@ -2082,8 +2082,23 @@
                 The effect() function will initially be called once to establish its dependencies.
                 When the count signal changes, the effect() function will automatically re-run.
 
+        ❕Cleaning Up
+            It is executed as part of effect function to define what should happen before the effect code runs the next time:
 
-    ## Misunderstanding
+            constructor() {
+                effect((onCleanup) => {
+                    const timer = setTimeout(() => {
+                        LOGIC
+                    }, 1000);
+
+                    onCleanup(() => {
+                        clearTimeout(timer);
+                    });
+                });
+            }
+
+
+    🗒️Misunderstanding
         price: number = 10; 
         quantity: number = 1; 
         totalPrice: number = this.price * this.quantity;
@@ -2100,8 +2115,6 @@
                 Sees that price changed from 10 to 20 → updates the DOM
                 Sees that quantity is still 1 → no update needed
                 Sees that totalPrice is still 10 → no update needed
-
-
 
 */
 
