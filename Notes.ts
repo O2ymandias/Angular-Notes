@@ -1012,17 +1012,16 @@
 
             Component -> Child component
 
-        ❕Example 1
+        ❕Example
             export class HomeComponent {
-                @ViewChild('myParagraph')
-                paragraph?: ElementRef<HTMLParagraphElement>;
+                @ViewChild('form') form?: ElementRef<HTMLFormElement>;
+                @ViewChild(ChildComponent) childComponent!: ChildComponent;
             }
 
-        ❕Example 2
-            export class HomeComponent {
-                @ViewChild(ChildComponent)
-                childComponent!: ChildComponent;
-            }
+        ❕Migrating to signal (viewChild())
+            private form = viewChild<ElementRef<HTMLFormElement>>('form');
+            If you are sure that selector is valid (references DOM element or component), you can consider required
+                form = viewChild.required<ElementRef<HTMLFormElement>>('form');
 
 
     🗒️@ViewChildren()
@@ -1040,42 +1039,65 @@
 
             QueryList<Component> -> Child components
 
-        ❕Example 1
+        ❕Example
             export class HomeComponent {
-                @ViewChildren('listItem')
-                listItems?: QueryList<ElementRef<HTMLElement>>;
+                @ViewChildren('listItem') listItems?: QueryList<ElementRef<HTMLElement>>;
+                @ViewChildren(ChildComponent) childComponents!: QueryList<ChildComponent>;
             }
 
-        ❕Example 2
-            export class HomeComponent {
-                @ViewChildren(ChildComponent)
-                childComponents!: QueryList<ChildComponent>;
-            }
+        ❕Migrating to signal (viewChildren)
+            private listItems = viewChildren<QueryList<ElementRef<HTMLElement>>>('listItem')
 
-    ‼️NOTES
-        QueryList: An Immutable list of items that Angular keeps up to date when the state of the application changes. QueryList itself is an iterable object.
-        If the view DOM changes, and a new child matches the selector of @ViewChild/@ViewChildren, the property is updated.
+        ❕NOTES
+            1. QueryList: Immutable list of items that Angular keeps up to date when the state of the application changes.
+            2. QueryList itself is an iterable object.
+            3. If the view DOM changes, and a new child matches the selector of @ViewChild/@ViewChildren, the property is updated.
 
 
-    ? @ContentChild()
-        -> To access DOM element or child component from parent PROJECTED CONTENT (<ng-content />).
+    🗒️@ContentChild()
+        To access DOM element or child component from parent PROJECTED CONTENT (<ng-content />).
+        Example
+            ❕Parent Component
+                <app-control>
+                     <input #projectedInput type="text" />
+                </app-control>
 
-    ? @ContentChildren()
-        -> To access a QueryList of DOM elements or child components from parent PROJECTED CONTENT (<ng-content />).
-        -> We may need to send a 2nd param
-            options: { descendants: boolean // Deep search into the nested elements }
+            ❕Child Component Template
+                <ng-content select="input, textarea" />
 
+            ❕Child Component TS
+                @ContentChild('projectedInput') private projectedInput?: ElementRef<HTMLInputElement | HTMLTextAreaElement>;
+
+                ngAfterContentInit(): void {
+                    const value = projectedInput.nativeElement.value;
+                }
+
+
+        ❕Migrating to signal (contentChild())
+            projectedInput? = contentChild<ElementRef<HTMLInputElement | HTMLTextAreaElement>>('projectedInput');
+
+            If you are sure that selector is valid (references DOM element or component), you can consider required
+                projectedInput = contentChild.required<ElementRef<HTMLInputElement | HTMLTextAreaElement>>('projectedInput');
+
+
+
+    🗒️@ContentChildren()
+        To access a QueryList of DOM elements or child components from parent PROJECTED CONTENT (<ng-content />).
+        We may need to send a 2nd param
+            options: { descendants: boolean ‼️Deep search into the nested elements }
+
+        ❕Migrating to signal (contentChildren())
 
 */
 
 // * Transfer data from the parent to the child component (@Input()).
 /*
-    🗒️ @Input() Decorator
+    🗒️@Input() Decorator
         1. Marks a class property as an input property
         2. The input property is bound to a DOM property.
         3. During change detection, Angular automatically updates the class property with the DOM property's value.
 
-    🗒️ Example
+    🗒️Example
         ❕ChildComponent
             export class ChildComponent {
                 @Input() userName = '';
@@ -1086,12 +1108,8 @@
                         alias: emailAddress ❗ To provide an alias for the property.
                     })
                     email: string = '';
-
-                ❕In Angular 17+ version, you Should use SIGNAL [input<T>()] instead of @Input().
-                    userName: string = input("");
             }
 
-        ////////////////////////
 
         ❕ ParentComponent
             export class ParentComponent {
@@ -1102,27 +1120,31 @@
         ❕Parent Component Template
             <app-child
                 [userName]="UserNameToBeSent"
-                [email]="EmailToBeSent" ❗ Must be provided
+                [email]="EmailToBeSent" ‼️Must be provided
             />
+
+    🗒️Migrating to signals
+        Creating an input signal
+            userName = input<string>(''); ‼️Optional, to give it an initial value, if not (userName -> InputSignal<string | undefined>)
+
+        Creating a required input signal
+            email: InputSignal<string> = input.required<string>();
 */
 
 // * Transfer data from the child to the parent component (@Output()).
 /*
-    🗒️ @Output() Decorator
+    🗒️@Output() Decorator
         ❕ Marks a class property as an output property which is typically an instance of EventEmitter<T>.
         So parent component can listen to this event using event binding syntax.
 
         
-    🗒️ Steps
+    🗒️Steps
         [1] Define an EventEmitter in the child component and marks it as an output property using @Output() decorator.
 
             export class ChildComponent {
                 userName: string = 'John Doe';❗Data to be sent to the parent component
 
                 @Output() dataEvent = new EventEmitter<string>();
-
-                ❕In Angular 17+ version, you should use output<T>() (It is not a signal, But its the modern way to create an event emitter WITHOUT manually creating an instance of EventEmitter)
-                    dataEvent = output<string>();
             }
 
         [2] Emit the event with data when ACTION is triggered.
@@ -1148,6 +1170,14 @@
                     this.receivedUserName = data;
                     // Do some logic
                 }
+            }
+
+    🗒️Using output()
+        It is not a signal, But its the modern way to create an event emitter WITHOUT manually creating an instance of EventEmitter)
+        Example
+            dataEvent = output<string>();
+            sendDataToParent(): void {
+                this.dataEvent.emit(this.userName);‼️Fire the event with the data.
             }
 
 */
@@ -1209,13 +1239,22 @@
             [2] When the view and child views are checked for changes (With every change detection cycle).
 
 
-    ❕afterNextRender (Once) [NEW]
-        Executes Once after Hydration.
-        Skipped during SSR
+    ❕afterNextRender (Once) 
+        Executes exactly once after the component is hydrated.
+        Skipped during Server-Side Rendering (SSR).
+        Guaranteed to run only on the client-side.
 
-    ❕afterRender (Multiple Times) [NEW]
-        Runs after every change detection cycle
-        Skipped during SSR
+    ❕afterRender (Multiple Times) 
+        Runs with every change detection cycle
+        Skipped during Server-Side Rendering (SSR).
+        Guaranteed to run only on the client-side.
+
+
+    ‼️(afterNextRender & afterRender) only can be executed inside the constructor.
+        constructor() {
+            afterNextRender(() => { LOGIC });
+            afterRender(() => { LOGIC });
+        }
 
 
     ❕ngOnDestroy (Once)
@@ -2017,18 +2056,10 @@
         [3] Readonly Signal
             Is used to create an immutable version of a signal.
 
-            ## Creating a readonly signal
+            ❕Creating a readonly signal
                 test: Signal<number> = signal(10).asReadonly();
-
-        [4] Input Signal
-            Replaces the @Input() decorator.
-            Input Signals are readonly.
-
-            Creating an input signal
-                userName: InputSignal<string> = input<string>(''); ❗Optional, to give it an initial value, if not (userName -> InputSignal<string | undefined>)
-
-            Creating a required input signal
-                email: InputSignal<string> = input.required<string>(); 
+                
+        
 
     ## Side Effects (effect() function)
         -> Is used to perform side effects that depend on signal state like:
