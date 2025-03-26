@@ -402,7 +402,7 @@
                         }">
 
 
-        🗒️ Two-way Binding [()]
+        🗒️Two-way Binding [()]
             Works with Form Inputs, combines Property Binding"[value]" and Event Binding "(input)".
             Syntax: [(ngModel)]="data"
 
@@ -438,6 +438,28 @@
                                 3. Waits for the server's response.
                                 4. If the server responds with a new HTML page, the browser loads that page (causing a reload).
                                 5. If the server responds with a redirect, the browser navigates to the new URL.
+
+        🗒️Custom Two-way Data Binding (Using (input & output) properties)
+            ❕Child Component
+                [1] Setting Input Property
+                    size = input.required<{ width: string; height: string }>();
+
+                [2] Setting Output Property
+                    sizeChange = output<{ width: string; height: string }>();
+                        ‼️MUST be the same input property name + "Change"
+
+            ❕Parent Component
+                [3] Using [(modelProperty)] syntax
+                    <app-rect [(size)]="rectSize" />
+
+                    
+        🗒️Custom Two-way Data Binding (Using modelSignal)
+            ❕ChildComponent
+                size = model.required<{ width: string; height: string }>();
+
+            ❕Parent Component
+                Using [(modelProperty)] syntax
+                    <app-rect [(size)]="rectSize" />
 
 
 */
@@ -1105,7 +1127,8 @@
                 ❕You can pass an options to @Input({})
                     @Input({
                         required: true, ❗To make the property required.
-                        alias: emailAddress ❗ To provide an alias for the property.
+                        alias: emailAddress, ❗To provide an alias for the property.
+                        transform: (value) => value.trim() ❗To apply a transformation on data. 
                     })
                     email: string = '';
             }
@@ -1128,7 +1151,14 @@
             userName = input<string>(''); ‼️Optional, to give it an initial value, if not (userName -> InputSignal<string | undefined>)
 
         Creating a required input signal
-            email: InputSignal<string> = input.required<string>();
+            email = input.required<string>();
+
+        Additional Configurations
+            id = input<string>({
+                alias: "UserId",
+                transform: (val) => val.trim();
+            })
+
 */
 
 // * Transfer data from the child to the parent component (@Output()).
@@ -1143,8 +1173,9 @@
 
             export class ChildComponent {
                 userName: string = 'John Doe';❗Data to be sent to the parent component
-
                 @Output() dataEvent = new EventEmitter<string>();
+
+                ❕You can pass a string to @Output("Data") to configure aliasName. 
             }
 
         [2] Emit the event with data when ACTION is triggered.
@@ -1179,6 +1210,7 @@
             sendDataToParent(): void {
                 this.dataEvent.emit(this.userName);‼️Fire the event with the data.
             }
+        ❕You can pass a configuration obj to output() to configure aliasName
 
 */
 
@@ -1526,7 +1558,8 @@
 
 // * Directives
 /*
-    Special markers in the DOM that allow you to extend HTML's functionality.
+    Enhancements for elements (Native HTML element | Component)
+    Unlike components, directives have no template (Components are directives with a template).
 
     Types Of Directives
         [1] Component Directives
