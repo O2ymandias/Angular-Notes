@@ -539,8 +539,7 @@
             ❕<ng-template>
                 Is used to define template blocks that are not rendered immediately. These templates can be reused and displayed dynamically using *ngIf.
 
-                ✅ Use Cases
-                    1. else block for *ngIf directive
+
         🗒️Structural Directives
             Needs to be imported from @angular/common.
 
@@ -1559,20 +1558,19 @@
 // * Directives
 /*
     Enhancements for elements (Native HTML element | Component)
-    Unlike components, directives have no template (Components are directives with a template).
+    Unlike components, directives have no template.
 
     Types Of Directives
         [1] Component Directives
             Component is special directive with a template.
 
-        [2] Structural Directives
-            Directives that modifies the structure of the DOM by adding or removing elements.
-            -> *ngIf, *ngFor, *ngSwitch
-            -> Not commonly used after flow control @If, @For, @Switch 
+        [2] Structural Directives (*)
+            ❕Directives that modifies the structure of the DOM (adding or removing elements).
+                -> *ngIf, *ngFor, *ngSwitch
+            ❕Not commonly used after control flow (@If, @For, @Switch) 
 
         [3] Attribute Directives
-            Directives that changes the styles of an element
-            ->
+            ❕Directives that enhances the appearance or the behavior of an HTML native element or component.
                 [ngStyle]="{
                     'CSS property': 'value',
                 }"
@@ -1581,61 +1579,99 @@
                 }"
                 [NgModel] => Two way data binding
 
-            -> Not commonly used after class binding & style binding
+            ❕Not commonly used after class binding & style binding
 
-        [4] Custom Directive
+        🗒️Custom Attribute Directive
+            @Directive({
+                selector: 'a[appSafeLink]',
+                    ❕Angular will look at an anchor tag with an attribute "appSafeLink"
 
-            * Custom Attribute Directive
-                @Directive({
-                    selector: '[appCustom]',
-                })
+                standalone: true,
 
-                export class CustomDirective {
-                    constructor(private element: ElementRef) {}
-                }
+                host: {
+                    ❕The element where the directive is used (The anchor that has appSafeLink attribute)
+                    ❕The host (a[appSafeLink]) can be enhanced by:
+                        1. Attaching an event listener
+                            "(click)": "onClick($event)",
 
-                !NOTES
-                    -> Use ngAfterViewInit to ensure your directive's logic runs after the DOM is fully ready.
+                        2. Adding classes
+                            "class": "active",
+                },
+            })
+
+            export class SafeLinkDirective {
+                hostElement = inject(ElementRef);
+            }
+
+            🗒️NOTES
+                ❕Use ngAfterViewInit hook to ensure your directive's logic runs after the DOM is fully ready.
                     This makes sure that any DOM manipulations or changes you want to make to the element happen after it has been rendered by Angular.
-                    -> If your directive’s logic doesn’t require waiting for the view initialization, you could skip ngAfterViewInit and use ngOnInit or even the constructor.
 
-                    -> How @HostListener Works in a Directive ?
-                        Angular attaches the event listener to the element where the directive is used
-                        The directive doesn’t need to explicitly reference the host element, Angular does it behind the scenes.
+                ❕If your directive’s logic doesn’t require waiting for the view initialization, you could skip ngAfterViewInit hook and use ngOnInit hook or even the constructor.
 
-                    -> How to pass data from component to directive? 
-                        [1] Signal -> input<T>()
-                        [2] @Input
-                    
-                Example:
-                    Directive
-                        export class HighlightDirective {
-                            constructor(
-                                private element: ElementRef,
-                                private renderer: Renderer2,
-                            ) {}
 
-                            @Input()
-                            onHover: string[] = [];
+        🗒️Passing data from component to directive? 
+            @Directive({
+                selector: 'a[appSafeLink]',
+            })
+            export class SafeLinkDirective {
+                queryParam = input<string>('myapp', { alias: 'appSafeLink' });
+                ❕We provide (an alias name OR naming the input property) exactly like the directive attribute name, So we can pass the input value directly via the directive instead of binding on the input
+            }
 
-                            @HostListener('mouseenter')
-                            onMouseEnter(): void {
-                                this.onHover.forEach((className) => {
-                                this.renderer.addClass(this.element.nativeElement, className);
-                                });
-                            }
-                            @HostListener('mouseleave')
-                            onMouseLeave(): void {
-                                this.onHover.forEach((className) => {
-                                this.renderer.removeClass(this.element.nativeElement, className);
-                                });
-                            }
-                        }
+            <a appSafeLink="docs" href="https://angular.dev">Angular Documentation</a>
 
-                    Component Template
-                        <p appHighlight [onHover]="['bg-slate-950', 'text-slate-50', 'rounded']">
-                            Hover over me!
-                        </p>
+            ❕If the input property has a different name of the the directive attribute name
+                queryParam = input<string>('');
+                <a appSafeLink queryParam="docs" href="https://angular.dev">Angular Documentation</a>
+
+        
+
+    🗒️Custom Structural Directive
+        @Directive({
+            selector: '[appAuth]',
+            standalone: true,
+        })
+
+        export class AuthDirective {
+        
+            [1] Inject TemplateRef Service
+                templateRef = inject(TemplateRef);
+                    ❕To access <ng-template> content.
+                        <ng-template appAuth="admin">
+                            <p> Content </p>
+                            ‼️We know that <ng-template /> won't be rendered automatically.
+                        </ng-template>
+                        
+                        Equivalent shorthand
+                            <p *appAuth="'admin'">
+                                Content
+                                ‼️(*) is syntactic sugar for <ng-template />
+                            </p>
+                        
+            [2] Inject ViewContainerRef Service
+                viewContainerRef = inject(ViewContainerRef);
+                    ❕It provides a methods to manipulate the DOM dynamically
+                        1. createEmbeddedView()
+                            Allows you to create and insert a view from an ng-template.
+                            It takes a TemplateRef and renders its content inside the component dynamically.
+
+                        2. clear()
+                            Remove all embedded views from the container.
+        }
+
+    🗒️ Host Directives
+        @Component({
+            hostDirectives: [
+                AuthDirective,
+                {
+                    directive: LogDirective,
+                    inputs: ["input:AliasName", "anotherInputWithoutAlias"],
+                    outputs: [],
+                }
+            ],
+            ...
+        })
 
 */
 
