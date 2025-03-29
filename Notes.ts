@@ -1967,36 +1967,65 @@
 // * Pipes
 /*
     Pipes are used to transform data in the template.
-    Types of Pipes
-        [1] Built-in Pipes
-            -> uppercase, lowercase, titlecase, date, currency, percent, json, slice, async, decimal.
+    You can chain pipes.
+        {{ scheduledOn | date | uppercase }}
 
-        [2] Custom Pipes
-            -> Allows you to create your own pipes for custom transformations.
+    🗒️Built-in Pipes
+        -> DatePipe
+            Example
+                {{ currentDate | date : "medium" }}
+                    
+        -> DecimalPipe
+            Format: {minIntegerDigits}.{minFractionDigits}-{maxFractionDigits}
+            Example:
+                {{ value | number : "2.2-2" }}
 
-    Usage
-        [1] Built-in Pipes
-            <p>{{ title | slice: 0:5 }}</p>
-                -> slice pipe takes 3 arguments:
-                    1. title
-                    2. start index
-                    3. end index
-                    # The first argument is always the value to be transformed.
-            <p>{{ date | date: 'dd/MM/yyyy' }}</p>
-            <p>{{ amount | currency: 'USD' }}</p>
-            <p>{{ text | uppercase }}</p>
+            If the formatted value is truncated it will be rounded
+                {{ value | number : "1.0-0" }}
 
-        [2] Custom Pipes
-            @Pipe({
-                name: 'customPipe'
-            })
-            export class CustomPipe implements PipeTransform {
-                transform(value: any, ...args: any[]): any {
-                    return value;
-                }
+    🗒️Custom Pipes
+        -> Allows you to create your own pipes for custom transformations.
+        @Pipe({
+            name: 'customPipe'
+            standalone: true, [Default]
+            pure: true [Default]
+        })
+        export class CustomPipe implements PipeTransform {
+            transform(value: any, ...args: any[]): any {
+                return value;
             }
+            ❕ Any pipe must have the transform method, that's why implementing PipeTransform interface is recommended.
+        }
 
-            <p>{{ text | customPipe }}</p>
+    🗒️Types of Pipes
+        [1] Pure Pipes (Default)
+            @Pipe({
+                pure: true,
+                ...
+            })
+                
+        Triggered only when:
+            A primitive value (string, number, boolean, etc.) changes.
+            The reference of an object or array changes.
+
+
+        [2] Impure Pipes
+            @Pipe({
+                pure: false,
+                ...
+            })
+
+        Runs on every change detection cycle, that's why not recommended.
+
+
+    🗒️Change detection with pipes
+        By default, all pipes are considered pure.
+
+        Pure pipes offer a performance advantage because Angular can avoid calling the transformation function if the passed value has not changed.
+
+        This means that mutations to object properties or array items are not detected unless the entire object or array reference is replaced with a different instance.
+
+        
 */
 
 // * Interceptors
