@@ -1408,6 +1408,49 @@
                     [2] Using constructor
                         constructor(@Inject(tasksServiceToken) private _tasksService: TasksService) {}
 
+        Example (Non-Service Values)
+            [1] Injection Token
+                export const TASK_STATUS_OPTIONS = new InjectionToken<TaskStatusOptions[]>('task-status-options');
+                    TASK_STATUS_OPTIONS → Acts as the identifier for TaskStatusOptions array.
+                    "task-status-options" → Used for debugging.
+
+            [2] The Value to provide and inject
+                export const taskStatusOptions: TaskStatusOptions[] = [
+                    {
+                        value: 'open',
+                        taskStatus: 'OPEN',
+                        text: 'Open'
+                    },
+                    {
+                        value: 'in-progress',
+                        taskStatus: 'IN_PROGRESS',
+                        text: 'In-Progress',
+                    },
+                    {
+                        value: 'done',
+                        taskStatus: 'DONE',
+                        text: 'completed',
+                    },
+                ];
+
+            [3] The Provider
+                Since this is not a service, we use useValue instead of useClass
+                export const taskStatusOptionsProvider: Provider = {
+                    provide: TASK_STATUS_OPTIONS,
+                    useValue: taskStatusOptions,
+                    ❕"When someone requests TASK_STATUS_OPTIONS, return taskStatusOptions."
+                };
+
+            [4] Providing the token via Element Injector (Component Level)
+                @Component({
+                    providers: [taskStatusOptionsProvider],
+                    ...
+                })
+                The token is only available in this component and its child components.
+
+            [5] Injecting the token
+                taskStatusOptions = inject(TASK_STATUS_OPTIONS);
+
 
     🗒️ Notes
         when you inject one service into another, the injected service must be provided by the root injector. This is because services don’t have their own element injector like components/directives. 
