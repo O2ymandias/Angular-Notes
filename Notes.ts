@@ -1295,16 +1295,9 @@
 
 */
 
-// * Services (@Injectable)
+// * Services
 /* 
     Allows to share logic and data across the application.
-    You don't create service instances yourself, instead, you request them from Angular.
-
-    🗒️Why using services?
-        1. Reusability: Centralizing data and reusable logic.
-        2. Separation of concern: Moving logic into services, so components can focus on managing UI.
-        3. Dependency Injection: Can be injected as a dependencies into components and directives.
-        4. Singleton Nature: One instance of the service is shared across the application (Consistency)
 
     @Injectable Decorator
         Marks a class as (available to be injected as a dependency).
@@ -1382,18 +1375,42 @@
                     Once the component/directive is destroyed, the associated service instance will also be destroyed.
 
 
+    🗒️ Creating a Custom Injection Token
+        The InjectionToken is used as a key to inject a service manually instead of relying on Angular's default class-based DI (By default, Angular uses class types as tokens).
+        
+        Example
+            [1] Create an object of InjectionToken class
+                export const tasksServiceToken = new InjectionToken<TasksService>("tasks-service-token")
+                    The token (tasksServiceToken) acts as an identifier for the TasksService.
+                    "tasks-service-token" is just a debugging aid.
 
 
-        [2] Module-level Injectors
-            -> If a service is provided inside a feature module (in @NgModule.providers), Angular creates a new injector specific to that module.
-            -> These services are not shared with other modules unless explicitly imported.
+                    
+            [2] Providing the Service Using the Root Injector
+                At main.ts:
+                    bootstrapApplication(AppComponent, {
+                        providers: [
+                            {
+                                provide: tasksServiceToken,
+                                useClass: TasksService, 
+                                    ❕“When someone requests tasksServiceToken, create and return an instance of TasksService.”
+                            },
+                        ],
+                    })
 
-            Example:
-                @NgModule({
-                    providers: [FeatureService]
-                })
-                export class FeatureModule { }
+                Angular, by default, would have done this for us behind the scenes with class-based DI.
+                    bootstrapApplication(AppComponent, { providers: [TasksService] }
+    
+                Now, any component that needs TasksService must request the token instead of the class.
+                    [1] Using inject()
+                        private _tasksService = inject(tasksServiceToken);
 
+                    [2] Using constructor
+                        constructor(@Inject(tasksServiceToken) private _tasksService: TasksService) {}
+
+
+    🗒️ Notes
+        when you inject one service into another, the injected service must be provided by the root injector. This is because services don’t have their own element injector like components/directives. 
     
 */
 
