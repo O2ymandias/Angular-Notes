@@ -599,9 +599,9 @@
         import { BrowserModule } from '@angular/platform-browser';
 
         @NgModule({
-        declarations: [AppComponent],
-        bootstrap: [AppComponent],
-        imports: [BrowserModule],
+            declarations: [AppComponent],
+            bootstrap: [AppComponent],
+            imports: [BrowserModule],
         })
         export class AppModule {}
 
@@ -1299,28 +1299,6 @@
 /* 
     Allows to share logic and data across the application.
 
-    @Injectable Decorator
-        Marks a class as (available to be injected as a dependency).
-
-        @Injectable({
-            providedIn:
-                'root' [COMMON]
-                    Service is SINGLETON and will be shared across the application.
-
-                'any'
-                    -> Separate instances per module.
-
-                'platform'
-                    -> Service is SINGLETON and will be shared across multiple applications running on the same Angular project.
-
-                    -> In main.ts you can bootstrap multiple Angular applications
-                        bootstrapApplication(AppComponent).catch((err) => console.error(err));
-                        bootstrapApplication(AnotherAppComponent).catch((err) => console.error(err));
-
-                        Both AppComponent and AnotherAppComponent will share the same instance of the service.
-    })
-
-
     🗒️What is the difference between constructor injection & inject()?
         [1] Constructor Injection
                 constructor(private _someService: SomeService) {
@@ -1332,24 +1310,12 @@
             It is not dependent on constructor parameters.
 
     🗒️Angular has multiple injectors:
-        [1] Root Injector
-            The root injector is created when the application starts.
-            Service is SINGLETON and will be shared across the application.
-            Service can be provided in 2 ways
-                [1] @Injectable({ providedIn: 'root' }) (Most Common Way)
-                    ❕Tree-shakable (Angular removes the service if not used).
+        Hierarchy: ElementInjector -> (RootInjector || ModuleInjector) -> PlatformInjector 
 
-                [2] main.ts
-                    bootstrapApplication(AppComponent, {
-                        providers: [Service],
-                    }).catch((err) => console.error(err));
-                    ❌ Not tree-shakable
-
-        [2] Element Injector
+        [1] ElementInjector
             Angular implicitly creates a hierarchy of injectors for each DOM element that corresponds to an Angular component or directive.
 
             These injectors form a tree structure similar to the component tree.
-
 
             ❕How Does This Work?
                 [1] Each Component or Directive Gets Its Own Element Injector
@@ -1373,6 +1339,50 @@
                 The service provided by Element Injector
                     One shared instance of the service for the component and its children.
                     Once the component/directive is destroyed, the associated service instance will also be destroyed.
+
+        [2] RootInjector
+            The root injector is created when the application starts.
+            Service is SINGLETON and will be shared across the application.
+            Service can be provided in 2 ways
+                [1] @Injectable({ providedIn: 'root' }) (Most Common Way)
+                    ❕Tree-shakable (Angular removes the service if not used).
+
+                [2] main.ts
+                    bootstrapApplication(AppComponent, {
+                        providers: [Service],
+                    }).catch((err) => console.error(err));
+                    ❌ Not tree-shakable
+
+                [..] If you are using Module-Based, You can provide the service or the token at AppModule's providers array
+                    @NgModule({
+                        providers: [
+                            { provide: tasksServiceToken, useClass: TasksService,}, ❕Token-based
+                            LoggingService ❕Class-based
+                        ],
+                    })
+
+
+        [3] ModuleInjector
+            ❕Eagerly Loaded Modules
+                When a service is provided in the providers[] array of a feature module, Angular merges it with the root injector.
+                This means all modules in the application share the same instance of the service.
+
+            ❕Lazy Loaded Modules 
+                If a module is lazy-loaded, Angular does not merge its providers into the root injector.
+                Instead, it creates a new instance of any service provided in providers[].
+
+
+        [4] PlatformInjector
+            @Injectable({
+                providedIn: 'platform'
+                ❕Service is SINGLETON and will be shared across multiple applications running on the same Angular project.
+            })
+
+            ❕In main.ts you can bootstrap multiple Angular applications
+                bootstrapApplication(AppComponent);
+                bootstrapApplication(AnotherAppComponent);
+
+                Both AppComponent and AnotherAppComponent will share the same instance of the service.
 
 
     🗒️ Creating a Custom Injection Token
