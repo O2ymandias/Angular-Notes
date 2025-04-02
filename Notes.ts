@@ -1297,47 +1297,103 @@
 
 // * Services (@Injectable)
 /* 
-    What is a service ?
-        -> Singleton object that is used to organize and share code across the application.
+    Allows to share logic and data across the application.
+    You don't create service instances yourself, instead, you request them from Angular.
 
-    Why using services?
-        [1] Reusability
-            -> Centralizing data and reusable logic
+    🗒️Why using services?
+        1. Reusability: Centralizing data and reusable logic.
+        2. Separation of concern: Moving logic into services, so components can focus on managing UI.
+        3. Dependency Injection: Can be injected as a dependencies into components and directives.
+        4. Singleton Nature: One instance of the service is shared across the application (Consistency)
 
-        [2] Separation of concern
-            -> Moving logic into services, so components can focus on managing UI
+    @Injectable Decorator
+        Marks a class as (available to be injected as a dependency).
 
-        [3] Dependency Injection
-            -> Can be injected as a dependencies into components and directives
-        
-        [4] Singleton Nature
-            -> One instance of the service is shared across the application (Consistency)
+        @Injectable({
+            providedIn:
+                'root' [COMMON]
+                    Service is SINGLETON and will be shared across the application.
 
-    @Injectable({
-        providedIn:
-            'root' [RECOMMENDED]
-                -> Service is SINGLETON and will be shared across the application.
+                'any'
+                    -> Separate instances per module.
 
-            'any'
-                -> Separate instances per lazy-loaded module.
+                'platform'
+                    -> Service is SINGLETON and will be shared across multiple applications running on the same Angular project.
 
-            'platform'
-                -> Service is SINGLETON and will be shared across multiple applications running on the same platform.
+                    -> In main.ts you can bootstrap multiple Angular applications
+                        bootstrapApplication(AppComponent).catch((err) => console.error(err));
+                        bootstrapApplication(AnotherAppComponent).catch((err) => console.error(err));
 
+                        Both AppComponent and AnotherAppComponent will share the same instance of the service.
     })
-        -> This is a decorator that marks a class as (available to be injected as a dependency).
 
 
-    What is the difference between constructor injection & inject()?
+    🗒️What is the difference between constructor injection & inject()?
         [1] Constructor Injection
-                constructor(private someService: SomeService) {
+                constructor(private _someService: SomeService) {
                 By default Angular DI System provides the required instances when the class is instantiated
             }
 
         [2] inject()
-            -> Allows for dependency injection outside of the constructor.
-            -> This function can be called within the class body but not inside a function.
-                private readonly someService = inject(SomeService);
+            Works only inside injection contexts (like services, components, directives, pipes, or effects).
+            It is not dependent on constructor parameters.
+
+    🗒️Angular has multiple injectors:
+        [1] Root Injector
+            The root injector is created when the application starts.
+            Service is SINGLETON and will be shared across the application.
+            Service can be provided in 2 ways
+                [1] @Injectable({ providedIn: 'root' }) (Most Common Way)
+                    ❕Tree-shakable (Angular removes the service if not used).
+
+                [2] main.ts
+                    bootstrapApplication(AppComponent, {
+                        providers: [Service],
+                    }).catch((err) => console.error(err));
+                    ❌ Not tree-shakable
+
+        [2] Element Injector
+            Angular implicitly creates a hierarchy of injectors for each DOM element that corresponds to an Angular component or directive.
+
+            These injectors form a tree structure similar to the component tree.
+
+
+            ❕How Does This Work?
+                [1] Each Component or Directive Gets Its Own Element Injector
+                    When Angular creates a component instance, it implicitly creates an Element Injector for the component.
+                    
+                    This injector is responsible for providing services specific to that component or directive.
+
+                [2] Service Resolution in the Injector Hierarchy
+                    If a service is not found in a component’s Element Injector, Angular will look up the hierarchy and search through the parent components' injectors.
+
+                    The search continues until Angular reaches the Root Injector.
+
+                    If no service is found at any level, Angular throws  NullInjectorError.
+
+            ❕Important
+                You can provide the service in the element injector via providers array.
+                    @Component({
+                        providers: [MyService],
+                    })
+
+                The service provided by Element Injector
+                    One shared instance of the service for the component and its children.
+                    Once the component/directive is destroyed, the associated service instance will also be destroyed.
+
+
+
+
+        [2] Module-level Injectors
+            -> If a service is provided inside a feature module (in @NgModule.providers), Angular creates a new injector specific to that module.
+            -> These services are not shared with other modules unless explicitly imported.
+
+            Example:
+                @NgModule({
+                    providers: [FeatureService]
+                })
+                export class FeatureModule { }
+
     
 */
 
