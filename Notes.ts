@@ -1467,9 +1467,42 @@
     
 */
 
-// * Observables
+// * RXJS
 /*
-    RXJS Operators
+    RxJs: is a library that makes it easier to apply "reactive programming" concepts using Observables.
+    Observable: is an object that produces and controls a stream of data.
+    RXJS observables emit values over time, you can set a subscriptions to handle them.
+    Observables implement the observer design pattern.
+
+    In the Angular, Observables are used by multiple services to get notified:
+        1. Whenever the URL changes in the browser
+            ActivatedRoute Service -> paramMap (Observable)
+
+        2. When a form input value gets updated
+            FormControl -> valueChanges (Observable)
+
+        3. When a HTTP request completes successfully
+            HTTPClient Service -> (get/post/patch/put/delete) return observable
+
+    🗒️How to get data from an Observable?
+        This is how we subscribe to an observable:
+            observable.subscribe({
+                next: (val) => {
+                    Will be called every time the observable emits a new value.
+                    The new value will be passed as a parameter to the next method.
+                }
+                error: (err) => {
+                    Will be called when the observable encounters an error.
+                    It will stop emitting after this.
+                }
+                complete: () => {
+                    Will be called once the observable completes (no more values will be emitted, and no error occurred)
+                    If an error occurs, the complete() won't be called.
+                } 
+            });
+
+
+    🗒️RXJS Operators
         Transform, filter, manipulate emitted values of an Observable before they reach the subscriber.
 
         [1] of()
@@ -1477,28 +1510,28 @@
             It emits the values one by one synchronously, then completes.
 
             Example:
-                const source$ = of(1, 2, 3);
+                source$ = of(1, 2, 3);
 
         [2] from()
             Creates an observable from an iterable object.
             It iterates over the iterable and emits each value one by one.
 
             Example:
-                const source$ = from([1, 2, 3]);
+                source$ = from([1, 2, 3]);
 
         [3] map()
             Transforms each emitted value before it reaches the subscriber.
 
             Example:
-                const source$ = of(1, 2, 3);
-                const mapped$ = source$.pipe(map(value => value * 2));
+                source$ = of(1, 2, 3);
+                mapped$ = source$.pipe(map(value => value * 2));
 
         [4] filter()
             Transforms each emitted value based on a condition before it reaches the subscriber.
 
             Example:
-                const source$ = of(1, 2, 3);
-                const filtered$ = source$.pipe(filter(value => value % 2 === 0));
+                source$ = of(1, 2, 3);
+                filtered$ = source$.pipe(filter(value => value % 2 === 0));
 
         [5] tap()
             Executes a side effect (like logging) for each emitted value without modifying it.
@@ -1525,48 +1558,115 @@
                 the previous inner stream will be unsubscribed and a new one will be subscribed to.
 
             Example:
-                this.details$ = router.paramMap.pipe(
+                details$ = router.paramMap.pipe(
                     switchMap(params => {
                         return this._detailsService.getData(params.get('id'));
                     })
-                )    
+                )
+
+        [7] concatMap()
+            Maps each value emitted by the source Observable to an inner Observable
+            Subscribes to these inner Observables one at a time in sequence
+            Waits for each inner Observable to complete before moving to the next one
+            Maintains the original order of emissions
 
 
+        [8] mergeMap()
+            Maps each value emitted by the source Observable to an inner Observable and process them CONCURRENTLY
+            Subscribes to inner Observables as soon as the outer Observable emits a value
+            Doesn't wait for each inner Observable to complete before moving to the next one
+            Faster but doesn't maintain the order.
+
+        [9] combineLatest()
+            Takes two or more Observables.
+            Emits an array (or projection) of the latest values from each observable.
+            Waits for all observables to emit at least once before it starts emitting.
+
+                    
+        [10] interval()
+            Creates an Observable that emits sequential numbers every specified interval of time
+            interval() emits values forever, so complete() is never called.
+            Example
+                timer$ = interval(1000)
 
 
+    🗒️Observables VS Signals
+        ❕Observables
+            1. Represent a stream of values over time
+            2. Require subscription management (must unsubscribe to prevent memory leaks)
+            3. Ideal for asynchronous operations (e.g., HTTP, user input, timers)
+            4. Support complex data flows using powerful RxJS operators (map, filter, switchMap, etc.)
 
-    Behavior Subject
-        Special type of Observable used to manage state and share data across different parts of the application.
+        ❕Signals
+            1. Represent a single reactive value that can change over time
+            2. Don't require subscription/unsubscription
+            3. Designed for fine-grained, synchronous reactivity (ideal for UI state)
+            4. Integrated with Angular's reactivity system (template updates, computed signals, effects)
 
-        Key Features:
-            [1] Stores the Current Value:
-                It keeps the last emitted value in memory and emits it immediately to any new subscribers.
-            [2] Requires an Initial Value:
-                Needs an initial value upon creation.
-            [3] Multiple Subscribers:
-                Multiple components can subscribe to it and get the latest value.
-            [4] Next Method:
-                You can emit a new value using the .next() method
+        Converting:
+            toObservable(signal)
+                To convert Signal to Observable
+                Must be called in an injection context.
+                Whenever the signal value changes, the observable will emit the new value.
 
-        Benefits:
-            -> State management in Angular services.
-            -> Sharing data between unrelated components.
+            toSignal(observable$) 
+                To convert Observable to Signal
+                Must be called in an injection context.
+                Whenever the observable emits new value, the signal will be updated.
+                Unlike observable (Doesn't necessary have initial value), signal has initial value, you can set it by passing an options object to toSignal()
+                    toSignal(observable$, { initialValue: 0 }) 
 
 
-        Syntax:
-            [1] Creating a behavior subject
-                const behaviorSubject = new BehaviorSubject<T>(initialValue);
+    🗒️ Creating custom observable
+        The constructor for the Observable class takes a function as a parameter, this function takes an observer object as a parameter, which has three methods:
+            next(): returns the next value to all subscribers.
+            complete(): is called when all data has been sent to subscribers
+            error() when an error occurs
 
-            [2] Emitting a new value
-                behaviorSubject.next(newValue);
 
-            [3] Subscribing to the behavior subject
-                const subscriber = behaviorSubject.subscribe((value) => {
-                    Do something with the value
-                })
-                
-        Note:
-            Every time you emit a new value using .next(), it will notify all active subscribers (.subscribe() callbacks will be triggered).
+    🗒️RXJS Subject
+        Is a special type of Observable that allows values to be sent to many subscribers
+        A subject can emit data, on top of having the capability to be subscribed to
+
+        Example
+            Send data to all subscribers
+                subject.next(data);
+
+            Expose the subject as an Observable and
+                subject.asObservable().subscribe(newValue => {
+                    this.currentValue = newValue;
+                });
+
+        There are several kinds of subjects:
+            1. Subject: Emits next value to current subscribers.
+            2. BehaviorSubject: Emits latest value to current and future subscribers.
+            3. ReplaySubject: Emits one-or-more previous values to future subscribers.
+            4. AsyncSubject: will only emit the last value upon completion of the Observable.
+
+
+        ❕More on Behavior Subject
+            Special type of Observable used to manage state and share data across different parts of the application.
+
+
+            -> Stores the Current Value [State Management]: It keeps the last emitted value in memory and emits it immediately to any new subscribers.
+            -> Requires an Initial Value: Needs an initial value upon creation.
+            -> Multiple Subscribers: Multiple components can subscribe to it and get the latest value.
+            -> Next Method: You can emit a new value using the .next() method
+
+            Syntax:
+                [1] Creating a behavior subject
+                    const behaviorSubject = new BehaviorSubject<T>(initialValue);
+
+                [2] Emitting a new value
+                    behaviorSubject.next(newValue);
+
+                [3] Subscribing to the behavior subject
+                    const subscriber = behaviorSubject.subscribe((value) => {
+                        Do something with the value
+                    })
+                    
+            Note:
+                Every time you emit a new value using .next(), it will notify all active subscribers (.subscribe() callbacks will be triggered).
             
 */
 
@@ -2218,32 +2318,120 @@
                     -> Rethrows the error so the component using the HTTP request can also handle it if needed.
 */
 
+// * Change Detection
+/*
+    Angular uses Zone.js to monkey-patch asynchronous APIs like setTimeout, Promise, addEventListener, and others, so it can detect when asynchronous operations start and finish. This allows Angular to know when to run change detection automatically.
+
+    ❕What is Zone.js?
+        Zone.js is a library that creates an execution context called a zone.
+        It's essentially a wrapper around all async operations, allowing it to intercept and track when tasks are scheduled and completed.
+
+    How does Angular use it?
+        1. When Angular bootstraps the app, it runs the entire application inside a special zone created by Zone.js, called NgZone.
+        It patches async APIs to notify Angular when an async operation starts and finishes.
+
+        2. Zone.js patches common async APIs like:
+            -> setTimeout, setInterval
+            -> Promise.then
+            -> addEventListener
+            -> XMLHttpRequest, fetch
+        This means it can intercept and track when these operations are scheduled and when they complete.
+
+        3. Once an async operation completes, Zone.js notifies Angular that something might have changed.
+
+        4. Angular responds by running change detection, which checks your app’s data for changes and updates the DOM if needed.
+
+
+    Types of Change Detection Strategies:
+        [1] Default Strategy (ChangeDetectionStrategy.Default)
+            Angular runs change detection on every component in the component tree whenever an event occurs, even if a component is not directly affected.
+
+            It checks all bindings (DataInterpolation, Property Binding, Event Binding, ...) for changes.
+                1. It evaluates expressions inside the template.
+                2. It compares previous and current values to see if anything has changed.
+                3. If a value has changed, it updates the DOM.
+
+            What Triggers Change Detection?
+                Change detection does NOT run for arbitrary browser events.
+                It only runs when Angular is aware of a change, such as:
+                    1. User Interactions such as click, input,... (when there's an event listener)
+                    2. Asynchronous Events
+                        HTTP responses 
+                        Timers (setTimeout(), setInterval())
+                        Observables (when using async pipe or subscribe())
+
+            If the component tree is large, this can lead to performance issues.
+
+            ❕Best Practices to Optimize Change Detection:
+                1. Avoid Expensive Operations in the Template
+                    Calling a function inside the template causes repeated executions during change detection.
+
+                2. Avoid Zone Pollution
+                    Inject NgZone service and run the code outside Angular's zone using runOutsideAngular() method.
+                        ngZone.runOutsideAngular(() => {
+                            Code that doesn't need change detection
+                        }
+
+                3. Use OnPush Strategy 
+
+
+        [2] OnPush Strategy (ChangeDetectionStrategy.OnPush)
+            @Component({
+                changeDetection: ChangeDetectionStrategy.OnPush,
+                ...
+            })
+
+            Angular checks the component ONLY if:
+                1. Input property reference changes (Angular performs a shallow reference check, not deep comparison)
+                2. An event originates within the component (click, input, ...)
+                3. An observable used in the template emits a new value (using async pipe)
+                4. A signal used in the template changes.
+                5. Manual change detection (markForCheck(), detectChanges())
+                    First we need to inject ChangeDetectorRef service and use:
+                        -> markForCheck() marks the component and its ancestors for change detection.
+                        -> detectChanges() triggers change detection for the current component only.
+
+            ❕This strategy improves performance by reducing unnecessary checks.
+            ❕Changes inside this component can affect the parent — OnPush doesn't block propagation up the component tree.
+
+    🗒️ Change detection with signals
+        [1] If you use a signal inside the template, Angular automatically tracks it. So when the signal changes:
+            Angular marks the component for check.
+            Angular runs change detection for the component and its ancestors even if the component is using OnPush strategy.
+
+        [2] If the signal is not used in the template,
+            Angular doesn’t know about it, It won’t trigger change detection automatically
+
+
+
+    🗒️ Change Detection during development mode
+        Angular runs change detection twice in development mode to help catch errors and ensure that the UI is consistent. This is called "double change detection".
+
+        If the UI is inconsistent after the second run, Angular will throw an error "ExpressionChangedAfterChecked" to help you identify the issue.
+
+        In production mode, Angular runs change detection only once for performance reasons.
+
+
+    🗒️ Going Zoneless
+        [1] Migrating to Signals
+            Signals are a new way to manage state and reactivity in Angular applications.
+
+        [2] Remove Zone.js from the application bundle
+            angular.json -> projects -> architect -> build -> options -> polyfills = [];
+            
+        [3] Remove Zone.js from the application startup
+            main.ts
+            bootstrapApplication(AppComponent, {
+                providers: [provideExperimentalZonelessChangeDetection()],
+            })
+*/
+
 // * Signals
 /*
-    Signal are trackable data container (object that can store any type of value).
-    🗒️ The Problem That Signals Solve
-        Change Detection Performance
-            ❕ Change Detection is the mechanism that keeps the view (template) in sync with the component's data (state). In Angular, change detection is triggered on every asynchronous event, such as:
-                1. Click events
-                2. HTTP requests
-                3. Timers (e.g., setTimeout)
+    A signal is a wrapper around a value that notifies interested consumers when that value changes. Signals can contain any value, from primitives to complex data structures.
 
-            ❕ By default, Angular checks the entire component tree, starting from the root component (AppComponent) and traversing down to all child components, even if only one component's state has changed.
-
-            ❕ During this process, Angular performs what's called "dirty checking"
-                1. Angular checks every component in the component tree.
-                2. For each component, it evaluates all bindings in the template, including:
-                    - @Input() properties
-                    - Property bindings like {{ propertyName }}
-                    - Event bindings such as (click)="method()"
-                    - Directive bindings like [ngClass], [style], etc.
-                3. This involves comparing the current value of each property with its previous value. If a difference is found, Angular updates the view accordingly.
-
-            
-    🗒️ How Signals Solve This Problem
-        ❕ Instead of checking the component tree, they create a direct relationship between your state and the parts of the UI that depend on that state.
-
-        ❕By using signals, Angular knows exactly which parts of the template depend on a given state and updates only those parts, avoiding unnecessary checks.
+    Applying Fine-grained reactivity
+        is about precisely tracking what parts of your UI depend on what specific pieces of data — and only updating those parts when that data changes.
 
     🗒️ Types of Signals
 
@@ -2293,7 +2481,7 @@
          
         ❕When Does effect() Run?
             Initially: It runs once immediately after it's created, establishing its dependencies.
-            On Dependency Changes: It re-runs automatically whenever any of the signals (used inside its callback) change.
+            On Dependency Changes: It re-runs automatically whenever any of the signals (read inside its callback) change.
 
         ❕Example
             count = signal(1);
