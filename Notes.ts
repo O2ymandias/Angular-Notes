@@ -1709,44 +1709,31 @@
 // * HttpClient
 /*
     Service for making HTTP request, provides useful methods to interact with backend APIs like:
-        get<T>()
-        post<T>()
-        put<T>()
-        delete<T>()
+        get<T>(), post<T>(), put<T>(), patch<T>(), delete<T>()
         All these methods returns Observable
 
-    Setting up HttpClient
-        [1] Create required service
-        [2] Inject HttpClient service into the required service
-            -> before, we MUST provide the application with HttpClient
-                app.config.ts
-                    appConfig: ApplicationConfig = {
-                        providers: [
-                            provideHttpClient(withFetch())
+    
+    🗒️Providing HTTPClient Service
+        ❕StandAlone Component
+            At main.ts
+            bootstrapApplication(AppComponent, {
+                providers: [provideHttpClient()],
+            })
 
-                            !NOTES
-                                -> By default HttpClient uses XMLHttpRequest API to make request.
-                                -> withFetch(): Switches the client to use fetch API instead (Modern).
-                                -> It's strongly recommended to enable fetch for applications that use Server-Side Rendering for better performance and compatibility. 
+            In modern Angular versions bootstrapApplication(AppComponent, appConfig) will take appConfig:ApplicationConfig as a second parameter, this appConfig is exported from app.config.ts file.
 
-                        ]
-                    }
+            ❕By default HttpClient uses XMLHttpRequest API to make request.
+            ❕Passing withFetch() to provideHttpClient(withFetch()) switches the client to use fetch API instead.
+            ❕It's strongly recommended to enable fetch for applications that use Server-Side Rendering for better performance and compatibility.
+            
+        ❕Module-Based
+            @NgModule({
+                providers: [provideHttpClient()],
+                ...
+            })
+            export class AppModule {}
 
-        [3] Create function into the required service to do API logic (get/post/put/delete), this function should return observable so it can be subscribed later.
 
-    * Subscription
-        subscribe({
-            next: (value) => {
-                Executes when the Observable emits a value.
-            },
-            error: (error) => {
-                Executes when an error occurs.
-            },
-            complete: () => {
-                Executes ONLY when an Observable has finished emitting ALL its values.
-                Won't execute if an error occurs.
-            }
-        })
 */
 
 // * Decorators Overview
