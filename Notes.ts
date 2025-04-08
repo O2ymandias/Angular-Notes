@@ -1542,6 +1542,10 @@
                 },
                 error: (error) => {
                     Executes when an error occurs.
+                    Once an error occurs in an observable
+                        1. The stream immediately stops.
+                        2. No more values will be emitted from the original observable 
+
                 },
                 complete: () => {
                     Executes ONLY when an Observable has finished emitting ALL its values.
@@ -1588,6 +1592,29 @@
             interval() emits values forever, so complete() is never called.
             Example
                 timer$ = interval(1000)
+
+        [11] catchError()
+            Catches errors thrown by an observable and allows you to handle them.
+            Must return an observable. If not, stream will break.
+            You can handle this by
+                1. Suppress Error Using of(fallbackValue)
+                    The observable does not throw an error to the subscriber.
+                    It emits the fallback value, then it completes
+
+                2. Silently Ignore the Error Using EMPTY
+                    The observable completes immediately. no value is emitted, and no error is thrown to the subscriber.
+
+                3. Re-throw the Error using throwError(() => error)
+                    The error is not suppressed.
+                    It allows the subscriber to handle it.
+                    
+                    throwError()
+                        -> Creates an observable that immediately throws an error
+                        -> In RxJS 7+, requires a function: throwError(() => error)
+
+ 
+
+
 
 
     🗒️Observables VS Signals
@@ -1710,7 +1737,15 @@
 /*
     Service for making HTTP request, provides useful methods to interact with backend APIs like:
         get<T>(), post<T>(), put<T>(), patch<T>(), delete<T>()
-        All these methods returns Observable
+        
+    All returns an Observable.
+    All take an optional second or third parameter called options:
+        {
+            headers,
+            observe: 'body' | 'response' | 'events' -> Specify the part of the response to return,
+            ...
+        }
+    The returned observable emits exactly ONCE.
 
     
     🗒️Providing HTTPClient Service
@@ -2247,62 +2282,37 @@
     Middleware between the client and the server.
     
     Use Cases:
-        [1] Authentication
-            Attach authorization headers (e.g., JWT tokens) to requests.
+        1. Authentication: Attach authorization headers (e.g., JWT tokens) to requests.
+        2. Error Handling: Catch and process errors globally.
+        3. Loading: Show and hide loaders based on request state.
 
-        [2] Error Handling
-            Catch and process errors globally.
+    Example
+        export const headersInterceptor: HttpInterceptorFn = (req, next) => {
+            const tokenService = inject(TokenService);
+            const request = req.clone({
+                headers: req.headers.set("token", tokenService.token)
+            })
+            return next(req).pipe(
+                tap((event) => {
+                    if (event.type === HttpEventType.Response){
+                        LOGIC
+                    }
+                })
+            );
+        };
 
-        [3] Loading
-            Show and hide loaders based on request state.
-
-    * Notes
-        We must provide the application with the interceptor.
+    ❕Notes
+        [1] We must provide the application with the interceptor.
             provideHttpClient(
                 withFetch(),
                 withInterceptors([headersInterceptor, errorsInterceptor]),
             )
 
-    Example:
+        [2] We can't mutate the request directly, we need to clone it first.
+            req.clone() creates a new request with the same properties as the original request, we can mutate the cloned request by passing an object with the properties to change.
 
-        [1] Headers Interceptor
-            export const headersInterceptor: HttpInterceptorFn = (req, next) => {
-                if (localStorage.getItem('userToken')) {
-                    req = req.clone({
-                    setHeaders: {
-                        token: localStorage.getItem('userToken') ?? '',
-                    },
-                    });
-                }
-                return next(req);
-            };
+        [3] next(req) passes the request to the next interceptor in the chain and returns an Observable of the response.
 
-            * Notes
-                -> We can't modify the request directly, we need to clone it first. (Angular's HttpRequests are immutable)
-
-                -> We use req.clone() creates a new request with the same properties as the original request, we can modify the cloned request by passing an object with the properties to change.
-
-                -> next(req) passes the request to the next interceptor in the chain and returns an Observable of the response.
-                
-        [2] Errors Interceptor
-            export const errorsInterceptor: HttpInterceptorFn = (req, next) => {
-                return next(req).pipe(
-                    catchError((err) => {
-                        ! Handle the error
-                        return throwError(() => err);
-                    }),
-                );
-            };
-
-            * Notes
-                pipe()
-                    -> Allows us to chain multiple operators to the observable like catchError, filter, map
-
-                catchError()
-                    -> Catches errors and allows us to handle them.
-
-                throwError()
-                    -> Rethrows the error so the component using the HTTP request can also handle it if needed.
 */
 
 // * Change Detection
