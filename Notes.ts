@@ -1612,9 +1612,15 @@
                         -> Creates an observable that immediately throws an error
                         -> In RxJS 7+, requires a function: throwError(() => error)
 
- 
+        [12] debounceTime()
+            Waits for a specified number of milliseconds after the last emitted value before emitting the latest value.
+            If a new value comes in before the timeout, the timer resets.
 
 
+            this.searchControl.valueChanges.pipe(debounceTime(300)).subscribe(value => {
+                Makes sure 300ms have been passed before emitting the next value
+                If the value emitted before 300ms, it will be ignored, and timer will be reset. 
+            });
 
 
     🗒️Observables VS Signals
@@ -2122,6 +2128,88 @@
                 }
 
             
+
+
+
+*/
+
+// Template-driven form
+/*
+    Is a way to handle form inputs using directives in the template (HTML) rather than in the component class. 
+
+    We need to import FormsModule so we can have access on
+        directives like ngModel, ngForm
+        
+
+    🗒️We you import FormsModule
+        Angular automatically applies the NgForm directive to the form element in the template
+            @Directive({
+                selector: 'form:not([ngNoForm])', // important!
+                ...
+            })
+            export class NgForm implements Form {
+                ...
+            }
+
+        ❕what does NgForm do?
+            1. It creates a top-level form group behind the scenes.
+            2. It registers all ngModel inputs inside the form.
+            3. It gives you access to properties like:
+                form.valid
+                form.value
+                form.controls
+
+            4. It lets you use template reference to reference the ngForm directive instance that angular created:
+                <form #myForm="ngForm">
+                    #myForm now refers to the Angular NgForm directive instance NOT the raw HTML element.
+
+        ❕If you don't want Angular to process the form
+            <form ngNoForm>
+                this form is not managed by Angular
+            </form>
+
+
+
+    🗒️When you use ngModel in a template-driven form, Angular automatically:
+        1. Registers the control with the parent form (ngForm)
+        2. Creates a FormControl instance behind the scenes
+        3. Starts tracking changes, validation, and state
+
+        ❕If ngModel is used within a form tag, either the name attribute must be set or the form control must be defined as 'standalone' in ngModelOptions.
+            <input ngModel id="email" type="email" />
+            <input
+                ngModel
+                id="email"
+                type="email"
+                [ngModelOptions]="{ standalone: true }"
+            />
+
+
+    🗒️Validation
+        When using the Forms Module, Angular provides you with directives like:
+        (required, minlength, maxlength, min, max, pattern, email).
+
+        Angular overrides the browser's default validation behavior, including built-in attributes like required.
+
+        These directives do not prevent form submission by themselves.
+
+        To track validation state, we use a template reference variable like #ref="ngModel":
+            This tells Angular not to access the native DOM element, but instead the NgModel instance that Angular creates behind the scenes.
+
+        When using template-driven from with ngModel, Angular adds some useful classes to the inputs:
+            (ng-pristine - ng-dirty)
+            (ng-invalid - ng-valid)
+            (ng-untouched - ng-touched)
+
+        ❕Form & Form Control States
+            pristine: The input has never been changed (no user interaction).
+            dirty: The input has been changed by the user.
+
+            untouched: The input has not lost focus yet (no blur event).	
+            touched: The input has been focused and then blurred (lost focus).
+
+            valid: The input is valid based on validation rules.
+            invalid: The input is invalid (fails validation).
 
 
 
