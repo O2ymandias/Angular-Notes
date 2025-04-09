@@ -2133,7 +2133,9 @@
 
 */
 
-// Template-driven form
+// * Forms
+
+// 🗒️Template-driven form
 /*
     Is a way to handle form inputs using directives in the template (HTML) rather than in the component class. 
 
@@ -2211,27 +2213,50 @@
             valid: The input is valid based on validation rules.
             invalid: The input is invalid (fails validation).
 
+    🗒️Updating the form data programmatically
+        afterNextRender(() => {
+            const savedLoginForm = localStorage.getItem('saved-login-form');
+            if (savedLoginForm) {
+                const timeOut = setTimeout(() =>
+                this.form().form.patchValue(JSON.parse(savedLoginForm))
+                );
+
+                this._destroyRef.onDestroy(() => clearTimeout(timeOut));
+            }
+        });
+
+        afterNextRender(): defers the execution of the function until the DOM is rendered in browser.
+
+        Even with using afterNextRender, the form object might not be fully initialized immediately at that point.
+
+        setTimeout() gives Angular time to finish initializing the form controls.
+
+
 
 
 */
 
-// * Reactive Form
+// 🗒️Reactive Form
 /*
-    Provides a robust and scalable way to manage form data, validation, and user interactions programmatically.
-
-    Imports
-        Import ReactiveFormsModule from "@angular/forms"
+    Provides a robust and scalable way to manage form data.
 
     Implementation:
-        [1] Using FormGroup and FormControl.
+        Using FormGroup and FormControl.
             userForm = new FormGroup(
+                ❕First Param -> Obj to configure the form controls
                 {
-                    name: new FormControl(initialValue, [Validators]),
+                    name: new FormControl(initialValue, [Validator, ..., ...]),
+
+                    password: new FormControl(initialValue, {
+                        validators: [Validator, ..., ...]
+                    })
                 },
-                { validators: [Custom Validation,]}
+
+                ❕Second Param -> Obj to configure the global form validations
+                { validators: [Custom Validation]}
             );
 
-        [2] Using FormBuilder Service
+        Using FormBuilder Service
             private readonly _formBuilder: FormBuilder = inject(FormBuilder);
             FormGroup this._formBuilder.group({},{})
                 -> First Param: Controls
@@ -2239,33 +2264,92 @@
                     OR
                     name: [initialValue, [Validators,]]
                 -> Second Param: Custom Validations
-                    { validators: [custom validation,] }
+                    { validators: [custom validation] }
             Example
                 registerForm: FormGroup = this._formBuilder.group({
                     name: this._formBuilder.control(null, [
-                    Validators.required,
-                    Validators.minLength(3),
-                    Validators.maxLength(20),
+                        Validators.required,
+                        Validators.minLength(3),
+                        Validators.maxLength(20),
                     ]),
 
                     email: [null, [Validators.required, Validators.email]]
                 });
 
         At Template:
+            To be able to bind the formGroup & formControlName, import ReactiveFormsModule from '@angular/forms'
+
             <form [formGroup]="registerForm" (ngSubmit)="onSubmit()">
-                <input type="text" formControlName="name" />
-                <input type="email" formControlName="email" />
+                <input type="email" [formControl]="form.controls.email" />
+                Or use formControlName
+                <input type="password" formControlName="password" />
             </form>
+
+        ❕Angular also added those special classes to the inputs using Reactive Forms:
+            (ng-pristine - ng-dirty)
+            (ng-invalid - ng-valid)
+            (ng-untouched - ng-touched)
+
+
+    🗒️Custom Validator Function
+        A validator function must return either:
+            null -> if the value is valid.
+            obj like { 'errorKey': true } (ValidationErrors) -> if the value is invalid 
+
+        mustContainSpecialChar(control: AbstractControl): ValidationErrors | null {
+            return BooleanExpression
+            ? null (Valid)
+            : {descriptiveErrorKey: true}  (Invalid)
+        }
+
+        password: new FormControl(initialValue, {
+            validators: [mustContainSpecialChar]
+        })
+
+    🗒️Custom Async Validator Function
+        An async validator object returns Observable<ValidationErrors | null>
+
+        export function emailIsUnique(control: AbstractControl) {
+            return BooleanExpression 
+            ? of(null)
+            : of({ notUniqueEmail: true })
+        }
+
+        email: new FormControl(initialValue, {
+            asyncValidators: [emailIsUnique]
+        })
+
+
+    🗒️Nested Form Groups
+        It's totally fine and often recommended to use nested FormGroups in Angular to organize complex forms.
+
+        You MUST refer to it in the template using FormGroup/FromGroupName
+
+        Example
+            signupForm = new FormGroup({
+                email: new FormControl(''),
+
+                address: new FormGroup({
+                    street: new FormControl(''),
+                    number: new FormControl(''),
+                    postalCode: new FormControl(''),
+                    city: new FormControl(''),
+                }),
+            })
             
-            * Why we use (ngSubmit) ?
-                Angular recommendation to handle the form submission WITHOUT reloading the page.
+            <form [formGroup]="signupForm" 
+                <input formControlName="email" />
 
-    * What is the difference between touched & dirty?
-        [1] Touched
-            User focused on and then left the field regardless of whether the value was changed or not.
+                <fieldset formGroupName="address">
+                    <legend>Your Address</legend>
 
-        [2] Dirty
-            User changed the value of the field, regardless of focus.
+                    <input formControlName="street" />
+                    <input formControlName="number" />
+                    <input formControlName="postalCode" />
+                    <input formControlName="city" />
+                </fieldset>
+            </form>
+
 
 */
 
