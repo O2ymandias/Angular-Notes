@@ -674,67 +674,68 @@
 
 // * Routing
 /* 
-    Routing: Navigation between different components.
-    Angular Router: Routes are defined in the app-routing.module.ts file.
+    Allows to create single-page application (SPA) that can navigate between views or components without reloading the entire page (Client Side Routing).
 
-    [1] Setting Configuring for Routes [app.routes.ts]
-        Inside routes array (Array of Route (interface)), We define the routes of the application.
-        Each route obj contains:
-            [1] path: URL segment
-            [2] component: Component to render when the URL matches the path
-            [3] redirectTo: Redirects to another route.
-            [4] pathMatch: Match the full URL or the prefix of the URL.
-            [5] title: Title of the page
-            [6] loadComponent: To apply lazy loading.
+    🗒️Provide the app with Angular Router.
+        In main.ts
+            bootstrapApplication(AppComponent, appConfig)
+            The appConfig is an obj implements ApplicationConfig usually imported from app.config.ts, thats why it must have a providers array.
 
+        In app.config.ts
+            export const appConfig: ApplicationConfig = {
+                providers: [provideRouter(routes)],
+            };
 
-    [2] Where to render the component of the matching route?
-        1. app.component.ts: 
-            Importing RouterOutlet Directive.
-            RouterOutlet: Directive acts as a placeholder where Angular will render the component of the matching route. 
+            Here we can provide Angular with the Router using provideRouter().
+            provideRouter(routes, ...features)
+                [1] Routes: an array of Route, usually imported from app.routes.ts, each consists of:
+                    {
+                        path:
+                            URL segment Or "**"(wildcard route) -> Is used to handle any routes that don't match any predefined paths.
 
-        2. app.component.html:
-            <router-outlet></router-outlet> (Directive)
-            HERE right after the directive , Angular will render the component of the matching route.
-        
-    [3] Navigating
-        [1] Using RouterLink Directive
-            RouterLink: Allows to navigate to a specific route.
-            Needs to be imported from @angular/router.
-            Syntax: routerLink="path"
-            Example:
-                <a routerLink="home">
-                    Home
-                </a>
+                        component:
+                            Component to render when the URL matches the path.
 
-            RouterLinkActive: Adds a css class/classes when the routerLink is active (routerLink value matches the current URL).
-            Needs to be imported from @angular/router.            
-            Syntax: routerLinkActive="classOne classTwo"
-            Example:
-                <a routerLink="home" routerLinkActive="active" >
-                    Home
-                </a>
+                        redirectTo:
+                            Redirects to another route.
 
-            RouterLinkActiveOptions: Interface used to configure the behavior of RouterLinkActive.
-            Syntax: [routerLinkActiveOptions]="{exact: true}"
-            Example:
-                <a routerLink="home" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
-                    Home
-                </a>
+                        children:
+                            For nested routes.
 
-    * Relative Path VS Absolute Path
-        [1] Relative Path
-            Means: Current URL + path
-            Better to use with child routes.
+                        pathMatch:
+                            'full' ->  The entire URL must match the route's path.
+                            Example
+                                { path: '', pathMatch: 'full', redirectTo: '/home' }
 
-        [2] Absolute Path (/path)
-            Means: Root of application + path
-            Better to use with main navigation links.
+                                URL: domain/ -> MATCHES (because it's an exact match to the empty path '').
 
+                                URL: domain/home -> DOES NOT MATCH (since path: '' must match the entire URL, and /home is not empty).
 
-    * provideRouter() (app.config.ts)
-        Parameters:
-            [1] Routes: The exported array of routes from the app.routes.ts file.
+                            'prefix' -> The start of the URL must match the route's path.
+                            Example
+                                { path: 'user', pathMatch: 'prefix', redirectTo: '/user' }
+
+                                URL: domain/user -> MATCHES (because it starts with user).
+
+                                URL: domain/user/profile -> MATCHES (because it also starts with user).
+
+                                URL: domain/about -> DOES NOT MATCH (because it doesn't start with user).
+
+                        title:
+                            Title of the page
+
+                        loadComponent:
+                            To apply lazy loading.
+
+                        data:
+                            To pass static data to the loaded component via route.
+                            {key: value}
+
+                        resolve:
+                            To fetch data before the route is activated
+                            {key: value} 
+                    }
+
             [2] ...features:
                 withInMemoryScrolling({
                     scrollPositionRestoration:
@@ -745,51 +746,237 @@
 
                 withHashLocation()
                 withViewTransition()
+                withComponentInputBinding() -> Enables automatic binding of routeParams/ queryParams/ staticData/ dynamicData to component inputs
 
-    * Dynamic Routing (Router Service)
-        Router Service (@angular/router)
-            To navigate (change routes) programmatically based on user actions, API responses, or other conditions.
-            private readonly _router: Router = inject(Router);
-            _router.navigate(["main/home", "id" ]) -> baseurl/main/home/XYZ
 
-    * Sending Data Via Route:
-        In app.routes the route is expecting data to be sent
-            { path: 'details/:id', component: DetailsComponent }
-                
-        Via RouterLink Directive 
-            <a [routerLink] = "['details', 'XYZ']">
-                Details
-            </a>
 
-        Via Router Service
-            private readonly _router:Router = inject(Router)
-            _router.navigate(["details", "XYZ"])
 
-    * Accessing Route Parameters (Router Service)
-        private readonly _activatedRoute = inject(ActivatedRoute);
-        id: string | null = null;
-        ngOnInit() {
-            this._paramMap.subscribe({
-                next: (params) => this.id = params.get("id") 
-            })
-            OR
-            this.id = this._activatedRoute.snapshot.paramMap.get('id'); 
+    🗒️Where to render the component of the matching route?
+        1. app.component.ts: 
+            Import the RouterOutlet directive from @angular/router.
 
-            What is the difference between the 2 approaches?
-                [1] Using the paramMap Observable
-                    -> Listens for changes in the route parameters and updates the id property whenever the route changes.
+            RouterOutlet acts as a placeholder where Angular dynamically renders the component that matches the current route.
 
-                    -> Best for components that stay loaded while route parameters change.
+        2. app.component.html:
+            <router-outlet />
+            HERE right after the directive , Angular will render the component of the matching route.
 
-                [2] Using snapshot.paramMap
-                    -> Gets the route parameter only once when the component is initialized.
 
-                    -> If the route parameter changes while the component remains loaded, the value does not update.
+        Nested Routes (Child Routes):
+            You can define child routes in the route config using the children property.
+            Angular will render child route components inside the RouterOutlet of the parent component's template.
+        
+    🗒️Navigating
+        [1] Using RouterLink Directive
+            RouterLink:
+                Allows to navigate to a specific route.
+                Needs to be imported from @angular/router.
+                Syntax: routerLink="path"
+                Example:
+                    <a routerLink="/home">
+                        Home
+                    </a>
 
-                    -> Best for cases where the component is destroyed and recreated for each navigation change.    
-        }
- 
+            RouterLinkActive Directive:
+                Adds a css class/classes when the routerLink is active (routerLink value matches the current URL).
+                Needs to be imported from @angular/router.            
+                Syntax: routerLinkActive="classOne classTwo"
+                Example:
+                    <a routerLink="home" routerLinkActive="active" >
+                        Home
+                    </a>
 
+            RouterLinkActiveOptions:
+                Interface used to configure the behavior of RouterLinkActive.
+                Syntax: [routerLinkActiveOptions]="{exact: true}"
+                Example:
+                    <a routerLink="home" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+                        Home
+                    </a>
+
+    🗒️Dynamic Routing
+        ❕Sending Data Via Route
+
+            1. Setting up dynamic routes (:dynamicRoute)
+                { path: 'users/:userId', component: UsersComponent }
+                 
+            2. Sending data via routes
+                ❕RouterLink Directive 
+                    <a [routerLink] = "['/users', id]">
+                        User
+                    </a>
+
+                ❕Router Service (Programmatically)
+                    private readonly _router = inject(Router)
+                    _router.navigate(["/users", id], {
+                        (replaceUrl: boolean) -> Useful when you DON'T want the current URL to be kept in the browser history, so no longer go back using the browser's back button
+
+                        (fragment: '') -> Adds a fragment (hash) to the URL, useful for scrolling to an element with the corresponding id.
+
+                        queryParams: {key: value} ->  Adds query parameters to the URL (?sort=asc), great for passing lightweight data.
+                    })
+
+
+        ❕Extracting Route Parameters
+            [1] @Input() / input()
+                The component must be standalone.
+                Need to be configured in the provideRouter()
+                    provideRouter(routes, withComponentInputBinding())
+
+                🗒️Default Behavior
+                    It only gives access to route parameters defined in the same route (not parent or child routes).
+
+                    To access parameters from parent routes, you need to pass withRouterConfig() to provideRouter()
+                        provideRouter(
+                            routes,
+                            withComponentInputBinding(),
+                            withRouterConfig({
+                                paramsInheritanceStrategy: 'always',
+                            })
+                        ),
+
+            [2] ActivatedRoute
+                private readonly _activatedRoute = inject(ActivatedRoute);
+                ngOnInit() {
+                    this._activatedRoute.paramMap.subscribe({
+                        next: (params) => {
+                            const userId = params.get("userId")
+                        })
+                    })
+
+                    Or ypu can take a snapshot of the url.
+                    const userId = this._activatedRoute.snapshot.paramMap.get('id').
+                }
+
+                🗒️What is the difference paramMap & snapshot?
+                    [1] paramMap (Observable)
+                        Listens for changes in the route parameters and emits new value whenever the route changes.
+
+                        Best for: components that stay loaded while route parameters change.
+
+                    [2] snapshot.paramMap
+                        Gets the route parameter only ONCE, when the component is initialized.
+
+                        If the route parameter changes while the component remains loaded, the value does not update.
+
+                        Best for: when the component is destroyed and recreated for each navigation change.
+
+                🗒️Default Behavior of ActivatedRoute
+                    It only gives access to route parameters defined in the same route (not parent or child routes).
+                    
+                    When using nested routes, you need to traverse up the route tree to access parameters from parent routes.
+
+                    this._activatedRoute.parent?.paramMap.subscribe().
+
+
+    🗒️Relative Path VS Absolute Path
+        [1] Relative Path
+            Means: Current URL + path
+            Better to use with child routes.
+
+        [2] Absolute Path (/path)
+            Means: Root of application + path
+            Better to use with main navigation links.
+
+        "../" -> is a relative path that tells the router to go one level up from the current route in the route hierarchy.
+            /users/13/details -> routerLink="../" -> /users/13
+
+        "./" -> is also a relative path tells the router to stay at the current level and resolve the route relative to the current URL.
+
+
+    🗒️Query Params
+        ❕Setting up query params
+            1. Import RouterLink Directive to have access on queryParams at the template.
+            2. in template
+                <a 
+                    routerLink="./" -> Navigates relative to the current route.
+                    [queryParams]="{ sort: sort() === 'asc' ? 'desc' : 'asc' }" -> Adds ?sort=asc/desc to the URL.
+                >
+                    Sort Ascending / Descending
+                </a>
+
+        ❕Extracting query params
+            [1] Via @Input()/input() -> withComponentInputBinding() MUST be configured
+
+                Make sure input property has the same name as been set in the template
+                sort = input<'asc' | 'desc'>('asc');
+
+            [2] Via ActivatedRoute
+                private _activatedRoute = inject(ActivatedRoute);
+                sort = signal<'asc' | 'desc'>('asc')
+                ngOnInit() {
+                    this._activatedRoute.queryParams.subscribe({
+                        next: (params) => this.sort.set(params['sort']),
+                    });
+                }
+
+    🗒️Passing static data to a route
+        route obj:
+        {
+            path: 'user',
+            component: UserComponent,
+            data: {
+                message: 'Hello'
+            }
+        },
+
+        ❕Extracting data
+            ❕Via @Input()/input() -> withComponentInputBinding() MUST be configured
+                message = input.required<string>();
+
+            ❕Via Activated Route
+                private _activatedRoute = inject(ActivatedRoute);
+                message = signal('');
+                this._activatedRoute.data.subscribe({
+                    next: (data) => this.message.set(data['message']),
+                });
+
+    🗒️Resolving Route-Related Dynamic 
+        Resolvers allow to fetch data before the route is activated, ensuring that components have all necessary data when they are initialized.
+
+        [1] Create Resolver Function
+            The resolver function must have specific signature
+            const resolve: ResolveFn<T> = (
+                route: ActivatedRouteSnapshot,
+                state: RouterStateSnapshot
+            )
+            {
+                Must return a value, Observable<T>, or Promise<T>.
+            }
+
+            Example:
+                export const resolveUserName: ResolveFn<string> = (
+                    route: ActivatedRouteSnapshot,
+                    state: RouterStateSnapshot
+                ) => {
+                    const usersService = inject(UsersService);
+                    const userId = route.paramMap.get('userId');
+                    return usersService.users.find((u) => u.id === userId)?.name ?? '';
+                };
+
+        [2] Add Resolver to the Route
+            {
+                path: 'users/:userId',
+                component: UserDetailComponent,
+                resolve: {
+                    userName: resolveUserName
+                }
+            }
+
+        [3] Access Resolved Data
+            ❕Via @Input()/input() -> withComponentInputBinding() MUST be configured
+                userName = input.required<string>();
+
+            ❕Via ActivatedRoute
+                private _activatedRoute = inject(ActivatedRoute);
+                userName = signal('');
+                this._activatedRoute.data.subscribe({
+                    next: (data) => this.message.set(data['userName']),
+                });
+
+        ❕Default Behavior
+            Resolvers run when route parameters change NOT query parameters
+            You can pass another property to the route obj runGuardsAndResolvers: 'paramsOrQueryParamsChange' to run the resolver when queryParams change as well 
 */
 
 // * Lazy Loading
@@ -2319,6 +2506,34 @@
             asyncValidators: [emailIsUnique]
         })
 
+    🗒️Factory Validator Function
+        Is a function that returns a custom validator, often used to compare multiple form controls.
+        Example
+            function equalValues(ctrl1: string, ctrl2: string): ValidatorFn  {
+                return (control: AbstractControl): ValidationErrors | null => {
+                    const val1 = control.get(ctrl1)?.value;
+                    const val2 = control.get(ctrl2)?.value;
+
+                    return val1 === val2 ? null : { notEqual: true };
+                };
+            }
+
+            signupForm = new FormGroup({
+                email: new FormControl(''),
+                passwords: new FormGroup(
+                {
+                    password: new FormControl(''),
+                    confirmPassword: new FormControl(''),
+                },
+                {
+                    validators: [equalValues('password', 'confirmPassword')],
+                }
+                )
+            })
+                
+            FormGroup also has its config obj where you can set up custom validators.
+            Angular generated classes will be added to HTML element that bound to this form group. 
+
 
     🗒️Nested Form Groups
         It's totally fine and often recommended to use nested FormGroups in Angular to organize complex forms.
@@ -2350,6 +2565,31 @@
                 </fieldset>
             </form>
 
+    🗒️FormArray
+        Is a way to manage a collection of form controls, such as a dynamic list of items like checkboxes, input fields, or groups of controls.
+        
+        Example
+            signupForm = new FormGroup({
+                source: new FormArray([
+                    new FormControl(false),
+                    new FormControl(false),
+                    new FormControl(false),
+                ]),
+            })
+
+            <form [formGroup]="signupForm" 
+                <fieldset formArrayName="source">
+                
+                    <legend>How did you find us?</legend>
+
+                    <input formControlName="0" type="checkbox" value="google"/>
+                    <input formControlName="1" type="checkbox" value="friend"/>
+                    <input formControlName="2" type="checkbox" value="other"/>
+
+                </fieldset>
+            </ form>
+
+        Each checkbox is bound to a boolean value
 
 */
 
