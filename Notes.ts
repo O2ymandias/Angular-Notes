@@ -273,11 +273,13 @@
 
             SSR VS CSR 
                 CSR (Client-Side Rendering)
-                    The client (browser) sends a request to the server.
-                    The server responds with blank HTML (HTML page contains only <app-root/> element).
-                    A large JavaScript bundle is sent along with the response.
-                    The browser executes the JavaScript, which dynamically builds and renders the rest of the content.
-                    The browser displays the fully-rendered HTML.
+                    1. The client (browser) sends a request to the server.
+                    2. The server responds with blank HTML (HTML page contains only <app-root/> element).
+                    3. A large JavaScript bundle is sent along with the response.
+                    4. The browser executes the JavaScript, which dynamically builds and renders the rest of the content.
+                    5. The browser displays the fully-rendered HTML.
+
+                    
 
                     
                 SSR (Server-side rendering)
@@ -286,9 +288,96 @@
                     The fully-rendered HTML is sent to the client.
                     The browser displays the fully-rendered HTML.
 
-    Module
-        Container for components, directives, pipes, and services.
+    🗒️Rendering Strategies
+        ❕Client-side rendering (CSR)
+            1. The client (browser) sends a request to the server.
+            2. The server responds with blank HTML (HTML page contains only <app-root/> element).
+            3. A large JavaScript bundle is sent along with the response.
+            4. The browser executes the JavaScript, which dynamically builds and renders the rest of the content.
+            5. The browser displays the fully-rendered HTML.
 
+            Advantages:
+                -> Fast navigation (only data needs to be fetched)
+
+            Disadvantages:
+                -> Bad SEO performance as search engine crawlers may not execute JavaScript effectively
+                -> Large JavaScript bundle size can impact performance and memory
+
+        ❕Server-side rendering (SSR)
+            1. The client (browser) sends a request to the server.
+            2. The Angular application runs on the server (Node.js environment).
+            3. The server fully renders the HTML, including all components and content.
+            4. The server sends complete HTML to the browser.
+            5. The browser displays this HTML immediately.
+            6. In parallel, Angular JavaScript bundles are downloaded.
+            7. Once downloaded, Angular "hydrates" the page.
+            8. The application becomes fully interactive.
+
+            Advantages:
+                -> Improved SEO: Search engines receive fully rendered HTML content.
+
+            Disadvantages:
+                -> Requires more server resources to render applications.
+
+            Considerations
+                Angular executes the components on (Node.js server environment) where the browser global objects like (window, document, navigator, location, ...) are not defined.
+                Accessing these objects during SSR leads to Reference Errors.
+
+                How to solve?
+
+                [1] Type Check
+                    Making sure the code ONLY runs in the browser.
+                    This works cause of Hydration, Angular Re-Executes the component in the browser.
+                    if (type of window !== "undefined"){
+                        Code to be executed ONLY In the browser
+                    }
+
+                [2] LifeCycle Hook afterNextRender
+                    Making sure the code ONLY runs after Hydration
+                    afterNextRender(()=> {
+                        Code to be executed ONLY In the browser, after Hydration
+                    })
+
+                [3] isPlatformBrowser(PLATFORM_ID) [Recommended]
+                        Returns true if the PLATFORM_ID represents browser.
+
+                        How to get PLATFORM_ID ?
+                            PLATFORM_ID: special token helps you distinguish between the browser and the server.    
+
+                            1. Constructor Injection
+                                constructor(@Inject(PLATFORM_ID) private readonly platformId: Object) {}
+                                PLATFORM_ID is a Token, Not a Service
+                                Tokens need to be injected using the parameter decorator @Inject
+
+                            2. inject() method
+                                private readonly platformId: Object = inject(PLATFORM_ID);
+
+                        ngOnInit(){
+                            if (isPlatformBrowser(platformId)){
+                                Code to be executed ONLY In the browser
+                            }
+                        }
+
+        ❕Static Site Generation
+            1. During build time, the Angular application pre-renders all pages.
+            2. Each route/page is generated as a separate HTML file.
+            3. These static HTML files are deployed to a static file server (Firebase)
+            4. When a user requests a page, the server delivers the pre-rendered HTML immediately.
+            5. The browser displays the complete HTML content instantly.
+            6. JavaScript bundles are downloaded in the background.
+            7. The application "hydrates" into a fully interactive Angular app.
+
+            Advantages:
+                Advantages
+                    Fastest Initial Load: Serves pre-built HTML with no rendering delay.
+                    Excellent SEO: Search engines receive complete HTML content.
+
+                Disadvantages
+                    Dynamic Routes Complexity: Requires special handling for dynamic routes.
+                        Static Site Generation happens at build time, which means:
+                            -> Angular needs to know all the routes ahead of time to pre-render them.
+                            -> This works great for static routes (/home, /about).
+                            -> But dynamic routes (/product/:id, /blog/:slug) depend on data that might come from a backend or database.
 */
 
 // * Component
@@ -723,6 +812,7 @@
 
                         title:
                             Title of the page
+                            Could be static or dynamic(Resolved)
 
                         loadComponent:
                             To apply lazy loading.
@@ -878,10 +968,18 @@
             Means: Root of application + path
             Better to use with main navigation links.
 
-        "../" -> is a relative path that tells the router to go one level up from the current route in the route hierarchy.
+        "../" -> is a relative path that tells the router to go (one level up) from the current route in the route hierarchy.
             /users/13/details -> routerLink="../" -> /users/13
 
         "./" -> is also a relative path tells the router to stay at the current level and resolve the route relative to the current URL.
+
+        ❕When you navigate programmatically using ("./", "../"), some configurations needs to be set.
+            this._router.navigate(['./'], {
+                relativeTo: this._activatedRoute,
+                onSameUrlNavigation: 'reload',
+                queryParamsHandling: 'preserve',
+            });
+
 
 
     🗒️Query Params
@@ -979,78 +1077,162 @@
             You can pass another property to the route obj runGuardsAndResolvers: 'paramsOrQueryParamsChange' to run the resolver when queryParams change as well 
 */
 
+// * Guards
+/*
+    Are used to control access to routes in your application.
+    They allow or prevent navigation to/from a route based on certain conditions 
+
+    Types of Guards in Angular:
+        [1] CanActivate
+            Checks if a route can be activated.
+            Example: Authentication (allow access only if the user is logged in).
+
+        [2] CanActivateChild
+            Checks if child routes of a route can be activated.
+            Example: Restricting access to child routes based on user roles or permissions.
+
+        [3] CanDeactivate
+            Checks if it's safe to leave the current route.
+            Example: Prevent losing unsaved changes when leaving a form.
+
+        [4] CanMatch
+            Checks if a route should be matched before the router activation.
+            Example: Conditionally matching routes based on user roles or other criteria.
+
+        ❕ If there is a guard on a parent route, the nested routes are also guarded. 
+
+        🗒️What is the difference between CanActivate & CanMatch ?
+            CanMatch (Should Angular even look at this route) 
+                Evaluated before the router matches the route.
+                If it returns false, the route is skipped during the matching process.
+
+            canActivate (Now that we found this route, are you allowed to enter?)
+                Evaluated after the route is matched but before the component is activated and loaded.
+                If it returns false, the navigation is canceled.
+                More versatile
+
+        ❕Guard function signature
+            (route: Route, segments: UrlSegment[]): boolean | RedirectCommand | Observable<boolean | RedirectCommand>
+
+        Example
+            export const authGuard: CanMatchFn = (route: Route, segments: UrlSegment[]) => {
+                const router = inject(Router);
+                const isAuthorized = Math.random() > 0.5;
+                const isAuthorized$ = of(isAuthorized).pipe(
+                    delay(1000),
+                    map((isAuthorized) => {
+                        if (isAuthorized) return true;
+                        else return new RedirectCommand(router.parseUrl('/unauthorized'));
+                    })
+                );
+                return isAuthorized$;
+            };
+
+
+*/
+
 // * Lazy Loading
 /*
-    Technique to load resources only when they are needed.
-    Can be applied on:
-        [1] Module
-        [2] Stand Alone Component
-        [3] Specific part of a component (@defer)
+    Loading resources only when they are needed. This reduces the bundle size which leads to improving performance & reducing memory usage.
+    This also means more http requests to the server which could have impact on performance if not wisely used.
 
+    🗒️Route-based Lazy Loading
+        ❌ Avoid -> import { TasksComponent } from '../tasks/tasks.component';
+            This will eagerly load the component as soon as the file is parsed/executed.
 
-    * Modules & Stand Alone Component
-        Lazy loading is implemented using routes. Instead of importing a module or component eagerly, it is loaded dynamically when a user navigates to a specific route.
+        ❕loadComponent
+            {
+                path: 'tasks',
+                loadComponent: () => import('./../tasks/tasks.component').then((c) => c.TasksComponent),
+                    ❕Angular triggers this only when the route is activated. Keeps initial bundle smaller and loads TasksComponent on demand.
+            }
 
-        Benefits:
-            The application loads only the components required for the first render
-                -> reduce the bundle size => (improve performance & reduce memory usage)
+        ❕loadChildren
+            {
+                path: 'users/:userId',
+                component: UserTasksComponent,
+                loadChildren: () => import('./users/users.routes').then((module) => module.routes),
+            },
 
-        Downsides:
-            Every route navigation requires an additional network request to fetch the component.
-                -> More http requests to the server => (may affect the performance for smaller apps)
+        🗒️Providing a service at the route level with lazy loading
+            1. Define the service without the {providedIn: 'root'} option in the @Injectable() decorator.
+            2. Avoid importing it in the main app routes file
+            3. Use lazy loading with loadChildren
+            4. Provide the service in a parent route within the lazy-loaded routes
 
+            Example
+                ❕app.routes.ts
+                export const routes: Routes = [
+                    {
+                        path: 'user',
+                        loadChildren: () => import('./user/user.routes').then(m => m.USER_ROUTES)
+                    },
+                    Other app routes...
+                ];
 
-        How to implement?
-            export const routes: Routes = [
+                ❕user.routes.ts
+                export const USER_ROUTES: Routes = [
                 {
-                    path: 'home',
-                    loadComponent: () => import('./home/home.component').then(c => c.HomeComponent),
-                    title: 'home'
+                    path: '', -> Parent route for all user routes
+                    providers: [UserDataService], ->  Provide service at route level
+                    children: [
+                        {
+                            path: 'profile',
+                            loadComponent: () => import('./user-profile.component')
+                            .then(m => m.UserProfileComponent)
+                        },
+                        {
+                            path: 'settings',
+                            loadComponent: () => import('./user-settings.component')
+                            .then(m => m.UserSettingsComponent)
+                        }
+                    ]
                 }
-            ];
+                ];
 
 
-    * Specific part of a component
+
+    🗒️Deferrable Views
         @defer
             The code for any components, directives, and pipes inside the @defer block is split into a separate JavaScript file and loaded only when necessary, results into a faster initial load.
 
         @defer Triggers:
-        
             [1] Predefined Triggers (on + ACTION)
+                    interaction: Triggers when the user interacts with specified element through (click or keydown) events.
 
-                    interaction
-                        -> Triggers when the user interacts with specified element through (click or keydown) events.
+                    hover: Triggers when the mouse hovers over specified area
 
-                    hover
-                        -> Triggers when the mouse hovers over specified area
+                    viewport: Triggers when specified content enters the viewport
 
-                    viewport 
-                        -> Triggers when specified content enters the viewport
+                    timer: Triggers after a specific duration
 
-                    !NOTE:
-                        -> By default, @placeholder acts as the interaction element incase of (interaction & hover) or the intersection observed element incase of (viewport).
+                    idle (Default): Triggers when the browser is "idle" (It means not processing tasks, such as loading a page, running scripts, or handling user interactions).
 
-                        -> Placeholders used this way MUST have at least a single element.
+                    immediate: Triggers immediately after non-deferred content has finished rendering
 
-                        -> You can specify a "template reference variable"(#ref), which is used as interaction element incase of (interaction & hover) or the intersection observed element incase of (viewport).
+                    ❕Notes
+                        By default, @placeholder acts as the interaction element incase of (interaction & hover) or the intersection element incase of (viewport).
 
-                    timer
-                        -> Triggers after a specific duration
+                        Placeholders used this way MUST have at least a single element.
 
-                    idle (Default)
-                        -> Triggers when the browser is "idle" (It means not processing tasks, such as loading a page, running scripts, or handling user interactions).
+                        You can specify a "template reference variable"(#ref), which is used as interaction element incase of (interaction & hover) or the intersection element incase of (viewport).
 
-                    immediate
-                        -> Triggers immediately after non-deferred content has finished rendering
+                        "prefetch": allows you to preload the content in the background, so it’s ready by the time it needs to be displayed
+                            @defer (on interaction; prefetch on hover) {
+                            <app-offer-preview />
+                            } @placeholder {
+                            <p> We might have an offer </p>
+                            This will be loaded on hover and will be displayed on interaction.
+}
+ 
+
+                
 
 
             [2] when + CONDITION
+                @defer block does not revert back to the placeholder if the condition changes to a falsy value after becoming truthy.
 
-
-            !NOTE:
-                -> @defer block does not revert back to the placeholder if the condition changes to a falsy value after becoming truthy.
-
-                -> We can use more than one trigger separating them by semicolons (;)
+                We can use more than one trigger separating them by semicolons (;)
                 Example:
                     @defer (on hover ; on timer(60s) ; when truthyValue ) {
                         <app-recommendations>
@@ -1061,18 +1243,18 @@
                     after 30 seconds OR when truthyValue is truthy.
 
         @placeholder
-            -> By default, defer block doesn't render any content before they are triggered.
+            By default, defer block doesn't render any content before they are triggered.
             
-            -> @placeholder is an optional block that declares what content to show before the @defer block is triggered.
+            @placeholder is an optional block that declares what content to show before the @defer block is triggered.
 
-            -> Angular replaces placeholder content with the main content once loading is complete.
+            Angular replaces placeholder content with the main content once loading is complete.
 
-            -> You can use any content in the placeholder body including plain HTML, components, directives, and pipes.
+            You can use any content in the placeholder body including plain HTML, components, directives, and pipes.
 
-            -> @placeholder(minimum 5s/5000ms): Accepts an optional parameter to specify the minimum amount of time that this placeholder should be shown after @defer is triggered.
+            @placeholder(minimum 5s/5000ms): Accepts an optional parameter to specify the minimum amount of time that this placeholder should be shown after @defer is triggered.
                 This minimum parameter is useful to prevent fast flickering of placeholder content in the case that the deferred dependencies are fetched quickly.
 
-            -> @placeholder dependencies are eagerly loaded. 
+            @placeholder dependencies are eagerly loaded. 
 
 
         @loading
@@ -2272,53 +2454,6 @@
         
 */
 
-// * SSR & Global Objects
-/*
-    -> When using SSR
-        Angular executes the components on (Node.js server environment) where the browser global objects like window, document, navigator, location are not defined.
-        Accessing these objects during SSR leads to Reference Errors.
-
-    How to solve?
-        [1] Type Check
-            Making sure the code ONLY runs in the browser.
-            This works cause of Hydration, Angular Re-Executes the component in the browser.
-
-            if (type of window !== "undefined"){
-                Code to be executed ONLY In the browser
-            }
-
-        [2] LifeCycle Hook afterNextRender
-            Making sure the code ONLY runs after Hydration
-
-            afterNextRender(()=> {
-                Code to be executed ONLY In the browser, after Hydration
-            })
-
-        [3] isPlatformBrowser(PLATFORM_ID) [Recommended]
-                Returns true if the PLATFORM_ID represents browser.
-
-                How to get PLATFORM_ID ?
-                    PLATFORM_ID: special token helps you distinguish between the browser and the server.    
-
-                    1. Constructor Injection
-                        constructor(@Inject(PLATFORM_ID) private readonly platformId: Object) {}
-                        PLATFORM_ID is a Token, Not a Service
-                        Tokens need to be injected using the parameter decorator @Inject
-
-                    2. inject() method
-                        private readonly platformId: Object = inject(PLATFORM_ID);
-
-                ngOnInit(){
-                    if (isPlatformBrowser(platformId)){
-                        Code to be executed ONLY In the browser
-                    }
-                }
-
-            
-
-
-
-*/
 
 // * Forms
 
@@ -2590,37 +2725,6 @@
             </ form>
 
         Each checkbox is bound to a boolean value
-
-*/
-
-// * Guards
-/*
-    Guards are used to control navigation between routes.
-    Types of Guards in Angular:
-        [1] CanActivate
-            Checks if a route can be accessed.
-            Example: Authentication (allow access only if the user is logged in).
-
-        [2] CanActivateChild
-            Checks if child routes of a route can be accessed.
-            Example: Restricting access to child routes based on user roles or permissions.
-
-        [3] CanDeactivate
-            Checks if it's safe to leave the current route.
-            Example: Prevent losing unsaved changes when leaving a form.
-
-        [4] CanMatch
-            Checks if a route should be matched before the router activation.
-            Example: Conditionally matching routes based on user roles or other criteria.
-
-        * What is the difference between CanActivate & CanMAtch ?
-            CanMatch 
-                Evaluated before the router matches the route.
-                If it returns false, the route is skipped during the matching process.
-
-            canActivate
-                Evaluated after the route is matched but before it's activated.
-                If it returns false, the navigation is canceled, but the route was already considered a match.
 
 */
 
