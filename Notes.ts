@@ -1992,6 +1992,97 @@
             });
 
 
+        [13] takeUntilDestroyed()
+            RxJS operator introduced in Angular 16+ that provides a clean and automatic way to unsubscribe from observables when a component, directive, or service is destroyed.
+
+            It takes DestroyRef Token as parameter which reference the component/directive/service that has been injected into.
+
+            Imported from: '@angular/core/rxjs-interop'
+
+            Automatically completes the observable on destruction (like takeUntil(this.destroy$) but cleaner)
+
+            Must be used in Angular's injection context if not explicitly passed a DestroyRef
+
+            Example (Injection Context)
+                @Component({...})
+                export class ExampleComponent {
+                    constructor() {
+                        interval(1000)
+                        .pipe(takeUntilDestroyed()) // implicitly uses DestroyRef here
+                        .subscribe();
+                    }
+                }
+
+            Example (Lifecycle Hook)
+                @Component({...})
+                export class ExampleComponent implements OnInit {
+                    private destroyRef = inject(DestroyRef); // must inject explicitly
+
+                    ngOnInit() {
+                        interval(1000)
+                        .pipe(takeUntilDestroyed(this.destroyRef)) // explicitly pass DestroyRef
+                        .subscribe();
+                    }
+                }
+
+    🗒️Unsubscribing from an observable
+        Unsubscribing from observables is crucial to prevent memory leaks.
+        [1] Manual Unsubscription
+            @Component({...})
+            export class ExampleComponent implements OnInit, OnDestroy {
+                private subscription!: Subscription;
+
+                ngOnInit() {
+                    this.subscription = interval(1000).subscribe();
+                }
+
+                ngOnDestroy() {
+                    this.subscription.unsubscribe();
+                }
+            }
+                
+        [2] DestroyRef
+            @Component({...})
+            export class ExampleComponent implements OnInit {
+                private _destroyRef = inject(DestroyRef)
+
+                ngOnInit() {
+                    const subscription = interval(1000).subscribe();
+
+                    this.destroyRef.onDestroy(() => subscription.unsubscribe());
+                }
+            }
+
+        [3] takeUntil()
+            @Component({...})
+            export class ExampleComponent implements OnInit, OnDestroy {
+                private destroy$ = new Subject<void>();
+
+                ngOnInit() {
+                    interval(1000)
+                    .pipe(takeUntil(this.destroy$))
+                    .subscribe();
+                }
+
+                ngOnDestroy() {
+                    this.destroy$.next();
+                    this.destroy$.complete();
+                }
+            }
+
+        [4] takeUntilDestroyed()
+            @Component({...})
+            export class ExampleComponent {
+                private destroyRef = inject(DestroyRef); // Automatically tracks component destruction
+
+                constructor() {
+                    interval(1000)
+                    .pipe(takeUntilDestroyed(this.destroyRef))
+                    .subscribe();
+                }
+            }
+
+
     🗒️Observables VS Signals
         ❕Observables
             1. Represent a stream of values over time
@@ -2453,7 +2544,6 @@
 
         
 */
-
 
 // * Forms
 
